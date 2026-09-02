@@ -993,6 +993,8 @@ function renderChallengeList(challenges){
   const banner = $('current-banner');
   const el = $('challenge-list');
   const heading = $('list-heading');
+  const rowHead = heading.closest('.row-head');
+  rowHead.style.display = 'flex';
 
   if(challenges.length === 0){
     banner.style.display = 'none';
@@ -1013,14 +1015,11 @@ function renderChallengeList(challenges){
   `;
   banner.onclick = () => openChallenge(current);
 
-  const rowHead = heading.closest('.row-head');
+  heading.textContent = 'Past reels';
   if(past.length === 0){
-    rowHead.style.display = 'none';
     el.innerHTML = '';
     return;
   }
-  rowHead.style.display = 'flex';
-  heading.textContent = 'Past reels';
   el.innerHTML = past.map(c => `
     <div class="reel" data-id="${c.id}">
       <div class="num">Week ${c.week_number}</div>
