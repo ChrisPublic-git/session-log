@@ -61,6 +61,8 @@
   @keyframes pulse{
     0%,100%{opacity:1;} 50%{opacity:.35;}
   }
+  .cursor{animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
   .brand h1{
     font-family:'VT323',monospace;
     font-size:22px;font-weight:400;letter-spacing:.1em;
@@ -183,7 +185,37 @@
     background:none;border:1px solid var(--hair);color:var(--muted);font-size:10px;
     font-family:'Share Tech Mono',monospace;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;
   }
+  .admin-portrait{
+    font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.05;
+    color:var(--ink);text-shadow:0 0 8px rgba(61,255,143,.55);
+    text-align:center;white-space:pre;margin:8px 0 4px;letter-spacing:0;
+    user-select:none;
+  }
+  .admin-portrait-caption{
+    text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.18em;margin-bottom:18px;
+  }
   .suggestion .promote-btn:hover{color:var(--ink);border-color:var(--ink);}
+
+  /* ---------- admin panel ---------- */
+  .admin-row{
+    background:var(--panel);border:1px solid var(--hair);padding:14px 16px;margin-bottom:10px;
+  }
+  .admin-row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .admin-row .a-title{font-family:'VT323',monospace;font-size:17px;color:var(--ink);}
+  .admin-row .a-meta{font-size:10.5px;color:var(--muted);font-family:'Share Tech Mono',monospace;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
+  .admin-row .a-body{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .admin-row .a-actions{display:flex;gap:8px;flex-shrink:0;}
+  .admin-row .a-actions button{
+    background:none;border:1px solid var(--hair);color:var(--muted);
+    font-size:10.5px;padding:5px 10px;font-family:'Share Tech Mono',monospace;text-transform:uppercase;letter-spacing:.03em;
+  }
+  .admin-row .a-actions button:hover{color:var(--ink);border-color:var(--ink);}
+  .admin-row .a-actions button.danger:hover{color:var(--rec);border-color:var(--rec);}
+  .admin-edit-form{margin-top:10px;padding-top:10px;border-top:1px dashed var(--hair);display:none;}
+  .admin-edit-form.open{display:block;}
+  .admin-edit-form .field{margin-bottom:8px;}
+  .admin-edit-form .field-actions{display:flex;gap:8px;margin-top:6px;}
   .detail-head{margin-bottom:24px;}
   .detail-head .num{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--tape);letter-spacing:.1em;text-transform:uppercase;}
   .detail-head h2{font-size:30px;margin:6px 0 10px;font-family:'VT323',monospace;font-weight:400;text-shadow:0 0 8px rgba(61,255,143,.4);}
@@ -427,6 +459,7 @@
     <div class="brand"><span class="dot"></span><h1 id="app-title">SESSION LOG</h1></div>
     <div class="who">
       <div id="who-name"></div>
+      <button id="admin-btn" style="display:none;">Admin</button>
       <button id="signout-btn">Sign out</button>
     </div>
   </header>
@@ -472,6 +505,33 @@
         <button id="suggestion-add">&#10148;</button>
       </div>
     </div>
+  </div>
+
+  <div id="admin-view" style="display:none;">
+    <button class="back" id="admin-back-btn">&larr; Back to app</button>
+    <pre class="admin-portrait">        &#9600;&#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;&#9600;
+      &#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;
+     &#9619;&#9619;&#9619;&#9619;&#9608;&#9608;&#9619;&#9619;&#9619;&#9619;&#9608;&#9608;&#9619;&#9619;&#9619;&#9619;
+     &#9619;&#9619;&#9619;&#9619;&#9608;&#9608;&#9619;&#9619;&#9619;&#9619;&#9608;&#9608;&#9619;&#9619;&#9619;&#9619;
+     &#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;
+      &#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;
+        &#9600;&#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;&#9600;
+       &#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;
+     &#9600;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9600;
+    &#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617; ??? &#9617;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;
+    &#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;&#9600;</pre>
+    <div class="admin-portrait-caption">Identity: classified<span class="cursor">_</span></div>
+    <div class="detail-head">
+      <div class="num">Admin</div>
+      <h2>The Chairman's Panel</h2>
+      <p class="params">Edit or delete any submission or message across the whole log.</p>
+    </div>
+    <div class="row-head"><h2>All submissions</h2></div>
+    <div id="admin-submissions"></div>
+    <div class="row-head" style="margin-top:26px;"><h2>All messages</h2></div>
+    <div id="admin-comments"></div>
+    <div class="row-head" style="margin-top:26px;"><h2>Members &amp; the Chairman role</h2></div>
+    <div id="admin-members"></div>
   </div>
 </div>
 
@@ -879,6 +939,7 @@ async function boot(user){
 
 function enterApp(){
   $('who-name').textContent = currentProfile.display_name;
+  $('admin-btn').style.display = currentProfile.is_admin ? 'inline-block' : 'none';
   showScreen('app');
   loadChallenges();
   loadGreatestHits();
@@ -1162,6 +1223,254 @@ async function getProfiles(ids){
     (data || []).forEach(p => profileCache[p.id] = p);
   }
   return profileCache;
+}
+
+/* ---------------- ADMIN PANEL (The Chairman) ---------------- */
+
+$('admin-btn').addEventListener('click', () => {
+  $('list-view').style.display = 'none';
+  $('detail-view').style.display = 'none';
+  $('admin-view').style.display = 'block';
+  loadAdminData();
+});
+
+$('admin-back-btn').addEventListener('click', () => {
+  $('admin-view').style.display = 'none';
+  $('list-view').style.display = 'block';
+});
+
+async function loadAdminData(){
+  const [{ data: subs }, { data: comm }] = await Promise.all([
+    sb.from('submissions').select('*, challenges(week_number, title)').order('created_at', { ascending: false }),
+    sb.from('comments').select('*, submissions(title)').order('created_at', { ascending: false })
+  ]);
+  const userIds = [...(subs || []).map(s => s.user_id), ...(comm || []).map(c => c.user_id)];
+  await getProfiles([...new Set(userIds)]);
+  renderAdminSubmissions(subs || []);
+  renderAdminComments(comm || []);
+  loadAdminMembers();
+}
+
+async function loadAdminMembers(){
+  const { data: members, error } = await sb.from('profiles').select('*').order('display_name');
+  if(error){ toast(error.message); return; }
+  renderAdminMembers(members || []);
+}
+
+function renderAdminMembers(members){
+  const el = $('admin-members');
+  if(members.length === 0){
+    el.innerHTML = '<div class="empty">No members yet.</div>';
+    return;
+  }
+  el.innerHTML = members.map(m => `
+    <div class="admin-row">
+      <div class="admin-row-top">
+        <div>
+          <div class="a-title">${escapeHtml(m.display_name)}${m.is_admin ? ' &mdash; Chairman' : ''}</div>
+          <div class="a-meta">${m.id === currentUser.id ? 'This is you' : ''}</div>
+        </div>
+        <div class="a-actions">
+          <button class="${m.is_admin ? 'danger' : ''}" data-toggle-admin="${m.id}" data-currently="${m.is_admin ? '1' : '0'}">
+            ${m.is_admin ? 'Remove Chairman' : 'Make Chairman'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-toggle-admin]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.toggleAdmin;
+      const currentlyAdmin = btn.dataset.currently === '1';
+      const label = members.find(m => m.id === id)?.display_name || 'this member';
+      const msg = currentlyAdmin
+        ? `Remove Chairman status from ${label}?`
+        : `Make ${label} the Chairman? They'll be able to edit or delete any submission or message.`;
+      if(!confirm(msg)) return;
+      const { error } = await sb.from('profiles').update({ is_admin: !currentlyAdmin }).eq('id', id);
+      if(error){ toast(error.message); return; }
+      toast(currentlyAdmin ? `${label} is no longer Chairman.` : `${label} is now Chairman.`);
+      if(id === currentUser.id){
+        currentProfile.is_admin = !currentlyAdmin;
+        $('admin-btn').style.display = currentProfile.is_admin ? 'inline-block' : 'none';
+        if(!currentProfile.is_admin){
+          $('admin-view').style.display = 'none';
+          $('list-view').style.display = 'block';
+          return;
+        }
+      }
+      loadAdminMembers();
+    });
+  });
+}
+
+function renderAdminSubmissions(subs){
+  const el = $('admin-submissions');
+  if(subs.length === 0){
+    el.innerHTML = '<div class="empty">No submissions yet.</div>';
+    return;
+  }
+  el.innerHTML = subs.map(s => {
+    const profile = profileCache[s.user_id];
+    const displayName = s.credited_name || (profile ? profile.display_name : '...');
+    const week = s.challenges ? s.challenges.week_number : '?';
+    return `
+      <div class="admin-row" data-sub-id="${s.id}">
+        <div class="admin-row-top">
+          <div>
+            <div class="a-title">${escapeHtml(s.title)}</div>
+            <div class="a-meta">${escapeHtml(displayName)} &middot; Week ${week}</div>
+          </div>
+          <div class="a-actions">
+            <button data-admin-edit-sub="${s.id}">Edit</button>
+            <button class="danger" data-admin-del-sub="${s.id}">Delete</button>
+          </div>
+        </div>
+        <div class="admin-edit-form" id="admin-sub-form-${s.id}">
+          <div class="field-group field">
+            <label>Title</label>
+            <input class="field" type="text" id="admin-sub-title-${s.id}" value="${escapeHtml(s.title)}">
+          </div>
+          <div class="field-group field">
+            <label>Credited artist</label>
+            <input class="field" type="text" id="admin-sub-credited-${s.id}" value="${escapeHtml(s.credited_name || '')}">
+          </div>
+          <div class="field-group field">
+            <label>Notes</label>
+            <textarea class="field" id="admin-sub-notes-${s.id}">${escapeHtml(s.notes || '')}</textarea>
+          </div>
+          <div class="field-group field">
+            <label>Replace audio file (optional)</label>
+            <input class="field" type="file" id="admin-sub-file-${s.id}" accept=".mp3,audio/mpeg">
+          </div>
+          <div class="field-actions">
+            <button class="btn secondary" data-admin-cancel-sub="${s.id}">Cancel</button>
+            <button class="btn" data-admin-save-sub="${s.id}">Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('[data-admin-edit-sub]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $(`admin-sub-form-${btn.dataset.adminEditSub}`).classList.toggle('open');
+    });
+  });
+  el.querySelectorAll('[data-admin-cancel-sub]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $(`admin-sub-form-${btn.dataset.adminCancelSub}`).classList.remove('open');
+    });
+  });
+  el.querySelectorAll('[data-admin-del-sub]').forEach(btn => {
+    btn.addEventListener('click', () => adminDeleteSubmission(btn.dataset.adminDelSub, subs));
+  });
+  el.querySelectorAll('[data-admin-save-sub]').forEach(btn => {
+    btn.addEventListener('click', () => adminSaveSubmission(btn.dataset.adminSaveSub, subs));
+  });
+}
+
+async function adminDeleteSubmission(id, subs){
+  const s = subs.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`Delete "${s.title}"? This can't be undone.`)) return;
+  await sb.storage.from('submissions').remove([s.audio_path]);
+  const { error } = await sb.from('submissions').delete().eq('id', id);
+  if(error){ toast(error.message); return; }
+  toast('Deleted.');
+  loadAdminData();
+}
+
+async function adminSaveSubmission(id, subs){
+  const s = subs.find(x => x.id === id);
+  if(!s) return;
+  const title = $(`admin-sub-title-${id}`).value.trim();
+  const creditedName = $(`admin-sub-credited-${id}`).value.trim();
+  const notes = $(`admin-sub-notes-${id}`).value.trim();
+  const file = $(`admin-sub-file-${id}`).files[0];
+  if(!title){ toast('Title can\'t be empty.'); return; }
+
+  const saveBtn = document.querySelector(`[data-admin-save-sub="${id}"]`);
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+
+  let audioPath = s.audio_path;
+  if(file){
+    const isMp3 = file.type === 'audio/mpeg' || file.type === 'audio/mp3' || /\.mp3$/i.test(file.name);
+    if(!isMp3){
+      toast('Replacement file must be an MP3.');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+      return;
+    }
+    try{
+      const challengeTitle = s.challenges ? s.challenges.title : '';
+      const buffer = await file.arrayBuffer();
+      const writer = new ID3Writer(buffer);
+      writer.setFrame('TIT2', title).setFrame('TPE1', [creditedName || (profileCache[s.user_id] ? profileCache[s.user_id].display_name : 'Unknown')]).setFrame('TALB', challengeTitle);
+      writer.addTag();
+      const uploadBlob = writer.getBlob();
+      const safeName = file.name.replace(/\.mp3$/i, '') + '.mp3';
+      const newPath = `${s.user_id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safeName}`;
+      const { error: upErr } = await sb.storage.from('submissions').upload(newPath, uploadBlob, { contentType: 'audio/mpeg' });
+      if(upErr) throw new Error(upErr.message);
+      await sb.storage.from('submissions').remove([s.audio_path]);
+      audioPath = newPath;
+    } catch(e){
+      toast(e.message || 'Could not replace audio file.');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+      return;
+    }
+  }
+
+  const { error } = await sb.from('submissions').update({
+    title, credited_name: creditedName || null, notes: notes || null, audio_path: audioPath
+  }).eq('id', id);
+
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save';
+  if(error){ toast(error.message); return; }
+  toast('Saved.');
+  loadAdminData();
+}
+
+function renderAdminComments(comments){
+  const el = $('admin-comments');
+  if(comments.length === 0){
+    el.innerHTML = '<div class="empty">No messages yet.</div>';
+    return;
+  }
+  el.innerHTML = comments.map(c => {
+    const profile = profileCache[c.user_id];
+    const who = profile ? profile.display_name : '...';
+    const subTitle = c.submissions ? c.submissions.title : '(deleted take)';
+    return `
+      <div class="admin-row">
+        <div class="admin-row-top">
+          <div>
+            <div class="a-title">${escapeHtml(who)}</div>
+            <div class="a-meta">on &ldquo;${escapeHtml(subTitle)}&rdquo; &middot; ${formatSubmittedTime(c.created_at)}</div>
+            <div class="a-body">${escapeHtml(c.body)}</div>
+          </div>
+          <div class="a-actions">
+            <button class="danger" data-admin-del-comment="${c.id}">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('[data-admin-del-comment]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('Delete this message?')) return;
+      const { error } = await sb.from('comments').delete().eq('id', btn.dataset.adminDelComment);
+      if(error){ toast(error.message); return; }
+      toast('Deleted.');
+      loadAdminData();
+    });
+  });
 }
 
 async function loadSubmissions(){
