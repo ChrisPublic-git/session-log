@@ -505,6 +505,7 @@
         <input type="text" id="suggestion-input" placeholder="Suggest a challenge idea...">
         <button id="suggestion-add">&#10148;</button>
       </div>
+      <button class="submit-cta" id="randomize-suggestion-btn" style="margin-top:18px;">&#127922; Randomly pick one</button>
     </div>
   </div>
 
@@ -1221,14 +1222,17 @@ async function addSuggestion(){
   loadSuggestions();
 }
 
-async function promoteSuggestion(suggestionId){
+async function promoteSuggestion(suggestionId, viaRandom){
   const s = suggestions.find(x => x.id === suggestionId);
   if(!s) return;
   const nextWeek = (allChallenges[0] ? allChallenges[0].week_number : 0) + 1;
+  const sourceLine = viaRandom
+    ? `Randomly selected from group suggestions \u2014 submitted by ${s.by}.`
+    : `Promoted from group suggestions \u2014 submitted by ${s.by}.`;
   const { error } = await sb.from('challenges').insert({
     week_number: nextWeek,
     title: s.text,
-    parameters: `Promoted from group suggestions \u2014 submitted by ${s.by}.`,
+    parameters: sourceLine,
     created_by: currentUser.id
   });
   if(error){ toast(error.message); return; }
@@ -1237,6 +1241,13 @@ async function promoteSuggestion(suggestionId){
   await loadChallenges();
   openChallenge(allChallenges[0]);
 }
+
+$('randomize-suggestion-btn').addEventListener('click', () => {
+  if(suggestions.length === 0){ toast('No suggestions to pick from yet.'); return; }
+  const pick = suggestions[Math.floor(Math.random() * suggestions.length)];
+  if(!confirm(`Randomly selected: "${pick.text}"\n\nUse this as next week's challenge?`)) return;
+  promoteSuggestion(pick.id, true);
+});
 
 let profileCache = {};
 async function getProfiles(ids){
