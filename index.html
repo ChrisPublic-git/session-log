@@ -438,11 +438,21 @@
 <div id="auth-screen" class="auth-wrap" style="display:none;">
   <div class="brand"><span class="dot"></span><h1 id="app-title-auth">SESSION LOG</h1></div>
   <p class="tag" style="margin-top:2px;text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:var(--ink);">Sign in</p>
-  <p class="tag">Invite-only. Enter the email you were invited with to get a sign-in link.</p>
-  <div id="auth-form">
+  <p class="tag" id="auth-subtitle">Invite-only. Enter the email you were invited with to get a sign-in link.</p>
+
+  <div id="auth-form-link">
     <input class="field" type="email" id="email-input" placeholder="you@email.com" autocomplete="email">
     <button class="btn" id="send-link-btn">Send sign-in link</button>
+    <button class="btn ghost" id="show-password-btn" style="width:100%;">Have a password? Sign in with it instead</button>
   </div>
+
+  <div id="auth-form-password" style="display:none;">
+    <input class="field" type="email" id="password-email-input" placeholder="you@email.com" autocomplete="email">
+    <input class="field" type="password" id="password-input" placeholder="password" autocomplete="current-password">
+    <button class="btn" id="password-signin-btn">Sign in</button>
+    <button class="btn ghost" id="show-link-btn" style="width:100%;">Use a sign-in link instead</button>
+  </div>
+
   <div id="auth-note" class="note"></div>
 </div>
 
@@ -460,6 +470,7 @@
     <div class="brand"><span class="dot"></span><h1 id="app-title">SESSION LOG</h1></div>
     <div class="who">
       <div id="who-name"></div>
+      <button id="set-password-btn">Set password</button>
       <button id="admin-btn" style="display:none;">Admin</button>
       <button id="signout-btn">Sign out</button>
     </div>
@@ -608,6 +619,28 @@
     <div class="modal-actions">
       <button class="btn secondary" id="s-cancel">Cancel</button>
       <button class="btn" id="s-save">Upload &amp; post</button>
+    </div>
+  </div>
+</div>
+
+<!-- SET PASSWORD MODAL -->
+<div class="modal-bg" id="password-modal">
+  <div class="modal">
+    <h3>Set a password</h3>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 16px;">
+      Sign in with your email and this password instead of waiting for a link, next time.
+    </p>
+    <div class="field-group">
+      <label>New password</label>
+      <input class="field" type="password" id="new-password-input" placeholder="At least 6 characters" autocomplete="new-password">
+    </div>
+    <div class="field-group">
+      <label>Confirm password</label>
+      <input class="field" type="password" id="confirm-password-input" placeholder="Repeat it" autocomplete="new-password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="password-cancel">Cancel</button>
+      <button class="btn" id="password-save">Save password</button>
     </div>
   </div>
 </div>
@@ -929,6 +962,57 @@ $('send-link-btn').addEventListener('click', async () => {
     noteEl.textContent = 'Check your email for a sign-in link. If you weren\'t invited to this space, the link won\'t arrive.';
     noteEl.className = 'note ok';
   }
+});
+
+$('show-password-btn').addEventListener('click', () => {
+  $('auth-form-link').style.display = 'none';
+  $('auth-form-password').style.display = 'block';
+  $('auth-subtitle').textContent = 'Sign in with your email and password.';
+  $('auth-note').textContent = '';
+});
+$('show-link-btn').addEventListener('click', () => {
+  $('auth-form-password').style.display = 'none';
+  $('auth-form-link').style.display = 'block';
+  $('auth-subtitle').textContent = 'Invite-only. Enter the email you were invited with to get a sign-in link.';
+  $('auth-note').textContent = '';
+});
+
+$('password-signin-btn').addEventListener('click', async () => {
+  const email = $('password-email-input').value.trim();
+  const password = $('password-input').value;
+  if(!email || !password){ return; }
+  $('password-signin-btn').disabled = true;
+  $('password-signin-btn').textContent = 'Signing in...';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  $('password-signin-btn').disabled = false;
+  $('password-signin-btn').textContent = 'Sign in';
+  const noteEl = $('auth-note');
+  if(error){
+    noteEl.textContent = 'No account with that password yet \u2014 sign in with your email link first, then set a password from the app.';
+    noteEl.className = 'note err';
+  }
+});
+$('password-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') $('password-signin-btn').click(); });
+
+$('set-password-btn').addEventListener('click', () => {
+  $('new-password-input').value = '';
+  $('confirm-password-input').value = '';
+  $('password-modal').classList.add('open');
+});
+$('password-cancel').addEventListener('click', () => $('password-modal').classList.remove('open'));
+$('password-save').addEventListener('click', async () => {
+  const pw = $('new-password-input').value;
+  const confirmPw = $('confirm-password-input').value;
+  if(pw.length < 6){ toast('Password needs to be at least 6 characters.'); return; }
+  if(pw !== confirmPw){ toast('Passwords don\'t match.'); return; }
+  $('password-save').disabled = true;
+  $('password-save').textContent = 'Saving...';
+  const { error } = await sb.auth.updateUser({ password: pw });
+  $('password-save').disabled = false;
+  $('password-save').textContent = 'Save password';
+  if(error){ toast(error.message); return; }
+  $('password-modal').classList.remove('open');
+  toast('Password set \u2014 you can sign in with it next time.');
 });
 
 $('save-name-btn').addEventListener('click', async () => {
