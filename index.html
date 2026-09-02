@@ -507,12 +507,13 @@
   <div class="modal">
     <h3>Submit your take</h3>
     <div class="field-group">
-      <label>Title</label>
+      <label>Title <span style="opacity:.6;">(only used for a single file)</span></label>
       <input class="field" type="text" id="s-title" placeholder="Track title">
     </div>
     <div class="field-group">
-      <label>MP3 file</label>
-      <input class="field" type="file" id="s-file" accept=".mp3,audio/mpeg">
+      <label>MP3 file(s)</label>
+      <input class="field" type="file" id="s-file" accept=".mp3,audio/mpeg" multiple>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Select several to bulk-upload — each track's title comes from its filename.</div>
     </div>
     <div class="field-group">
       <label>Credited artist (optional)</label>
@@ -1457,47 +1458,26 @@ $('submit-take-btn').addEventListener('click', () => {
   $('submit-modal').classList.add('open');
 });
 $('s-cancel').addEventListener('click', () => $('submit-modal').classList.remove('open'));
-$('s-save').addEventListener('click', async () => {
-  const title = $('s-title').value.trim();
-  const file = $('s-file').files[0];
-  const creditedName = $('s-credited').value.trim();
-  const notes = $('s-notes').value.trim();
-  if(!title || !file){ toast('Add a title and pick a file.'); return; }
 
-  const isMp3 = file.type === 'audio/mpeg' || file.type === 'audio/mp3' || /\.mp3$/i.test(file.name);
-  if(!isMp3){ toast('Please upload an MP3 file — that\'s what gets tagged and posted.'); return; }
+function deriveTitleFromFilename(filename){
+  const base = filename.replace(/\.mp3$/i, '');
+  return base.replace(/[_-]+/g, ' ').trim() || 'Untitled';
+}
 
-  $('s-save').disabled = true;
-  $('s-save').textContent = 'Tagging...';
-
-  let uploadBlob;
-  try{
-    const buffer = await file.arrayBuffer();
-    const writer = new ID3Writer(buffer);
-    writer
-      .setFrame('TIT2', title)
-      .setFrame('TPE1', [creditedName || currentProfile.display_name])
-      .setFrame('TALB', currentChallenge.title);
-    writer.addTag();
-    uploadBlob = writer.getBlob();
-  } catch(e){
-    toast('Could not read that MP3 — try a different file.');
-    $('s-save').disabled = false;
-    $('s-save').textContent = 'Upload & post';
-    return;
-  }
-
-  $('s-save').textContent = 'Uploading...';
+async function tagAndUploadOne(file, title, creditedName, notes){
+  const buffer = await file.arrayBuffer();
+  const writer = new ID3Writer(buffer);
+  writer
+    .setFrame('TIT2', title)
+    .setFrame('TPE1', [creditedName || currentProfile.display_name])
+    .setFrame('TALB', currentChallenge.title);
+  writer.addTag();
+  const uploadBlob = writer.getBlob();
 
   const safeName = file.name.replace(/\.mp3$/i, '') + '.mp3';
-  const path = `${currentUser.id}/${Date.now()}-${safeName}`;
+  const path = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safeName}`;
   const { error: upErr } = await sb.storage.from('submissions').upload(path, uploadBlob, { contentType: 'audio/mpeg' });
-  if(upErr){
-    toast(upErr.message);
-    $('s-save').disabled = false;
-    $('s-save').textContent = 'Upload & post';
-    return;
-  }
+  if(upErr) throw new Error(upErr.message);
 
   const { error: insErr } = await sb.from('submissions').insert({
     challenge_id: currentChallenge.id,
@@ -1507,11 +1487,40 @@ $('s-save').addEventListener('click', async () => {
     notes: notes || null,
     credited_name: creditedName || null
   });
+  if(insErr) throw new Error(insErr.message);
+}
+
+$('s-save').addEventListener('click', async () => {
+  const files = Array.from($('s-file').files);
+  const singleTitle = $('s-title').value.trim();
+  const creditedName = $('s-credited').value.trim();
+
+  if(files.length === 0){ toast('Pick at least one MP3 file.'); return; }
+  const notMp3 = files.filter(f => !(f.type === 'audio/mpeg' || f.type === 'audio/mp3' || /\.mp3$/i.test(f.name)));
+  if(notMp3.length){ toast('All files must be MP3s — that\'s what gets tagged and posted.'); return; }
+  if(files.length === 1 && !singleTitle){ toast('Add a title for this track.'); return; }
+
+  $('s-save').disabled = true;
+
+  let successCount = 0;
+  const notes = $('s-notes').value.trim();
+  for(let i = 0; i < files.length; i++){
+    const file = files[i];
+    $('s-save').textContent = files.length > 1 ? `Uploading ${i + 1}/${files.length}...` : 'Uploading...';
+    const title = files.length === 1 ? singleTitle : deriveTitleFromFilename(file.name);
+    try{
+      await tagAndUploadOne(file, title, creditedName, files.length === 1 ? notes : null);
+      successCount++;
+    } catch(e){
+      toast(`Failed: ${file.name}`);
+    }
+  }
 
   $('s-save').disabled = false;
   $('s-save').textContent = 'Upload & post';
 
-  if(insErr){ toast(insErr.message); return; }
+  if(successCount === 0) return;
+  toast(files.length > 1 ? `Uploaded ${successCount} of ${files.length} tracks` : 'Uploaded');
   $('submit-modal').classList.remove('open');
   loadSubmissions();
 });
