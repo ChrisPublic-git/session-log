@@ -798,9 +798,11 @@ function setPlayingState(state){
 
 playPauseBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if(!queue.length) return;
-  if(isPlaying){ playerAudio.pause(); }
-  else { ensureAnalyser(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); playerAudio.play(); }
+  if(isPlaying){ playerAudio.pause(); return; }
+  if(currentPlayingId){            // a track is loaded — resume it
+    ensureAnalyser(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); playerAudio.play(); return;
+  }
+  if(generalPlaylist.length){ playTrack(generalPlaylist[0]); }   // nothing loaded — start the newest song
 });
 playerAudio.addEventListener('play', () => setPlayingState(true));
 playerAudio.addEventListener('pause', () => setPlayingState(false));
@@ -924,6 +926,16 @@ function renderGeneralPlaylist(){
   generalListEl.querySelectorAll('[data-general-play]').forEach(row => {
     row.addEventListener('click', () => playTrack(generalPlaylist[parseInt(row.dataset.generalPlay, 10)]));
   });
+  cuePlayer();
+}
+
+// Show the newest song in the player as "ready" so the ▶ button works immediately,
+// without auto-playing. Skipped once something is actually playing.
+function cuePlayer(){
+  if(currentPlayingId || !generalPlaylist.length) return;
+  const t = generalPlaylist[0];
+  if(pTitle) pTitle.textContent = t.title;
+  if(pBy) pBy.textContent = (t.by ? t.by + ' — ' : '') + 'tap play';
 }
 
 function subscribeGeneralPlaylist(){
