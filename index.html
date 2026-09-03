@@ -778,8 +778,8 @@ function drawFrame(){
 requestAnimationFrame(drawFrame);
 
 function toggleExpand(){
-  playerEl.querySelector('.player-inner').classList.toggle('expanded');
-  playerChevron.innerHTML = playerEl.querySelector('.player-inner').classList.contains('expanded') ? '&#9660;' : '&#9650;';
+  playerEl.classList.toggle('expanded');   // playerEl IS the .player-inner element (id="player")
+  playerChevron.innerHTML = playerEl.classList.contains('expanded') ? '&#9660;' : '&#9650;';
 }
 playerToggleRow.addEventListener('click', (e) => {
   if(e.target.closest('.player-controls')) return;
