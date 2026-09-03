@@ -692,6 +692,7 @@ let currentProfile = null;
 let currentChallenge = null;
 let realtimeChannel = null;
 let allChallenges = [];
+let archiveChallenge = null;
 let challengeIndex = 0;
 let viewingSuggest = false;
 
@@ -852,7 +853,7 @@ function playTrack(track){
 }
 
 async function loadGreatestHits(){
-  const { data: recentChallenges } = await sb.from('challenges').select('*').order('week_number', { ascending: false }).limit(2);
+  const { data: recentChallenges } = await sb.from('challenges').select('*').gt('week_number', 0).order('week_number', { ascending: false }).limit(2);
   if(!recentChallenges || recentChallenges.length < 2) return;
   const prev = recentChallenges[1];
   const { data: subs } = await sb.from('submissions').select('*').eq('challenge_id', prev.id);
@@ -918,7 +919,7 @@ function renderGeneralPlaylist(){
       <div class="q-num">${String(generalPlaylist.length - i).padStart(2, '0')}</div>
       <div class="q-info">
         <div class="q-title">${escapeHtml(t.title)}</div>
-        <div class="q-by">${escapeHtml(t.by || '')}${t.week ? ' &middot; Week ' + t.week : ''}</div>
+        <div class="q-by">${escapeHtml(t.by || '')}${t.week ? ' &middot; Week ' + t.week : (t.week === 0 ? ' &middot; Archive' : '')}</div>
       </div>
     </div>
   `).join('');
@@ -1070,8 +1071,29 @@ function enterApp(){
 async function loadChallenges(){
   const { data, error } = await sb.from('challenges').select('*').order('week_number', { ascending: false });
   if(error){ toast(error.message); return; }
-  allChallenges = data || [];
+  const rows = data || [];
+  // week 0 is the hidden pre-app archive bucket — kept out of the weekly list/slider
+  archiveChallenge = rows.find(c => c.week_number === 0) || null;
+  allChallenges = rows.filter(c => c.week_number !== 0);
   renderChallengeList(allChallenges);
+}
+
+// The archive is a single hidden challenge (week 0) that holds pre-app / off-cycle
+// tracks. It never shows as the current banner or in the weekly slider, but its
+// tracks appear in the General Playlist like any other submission.
+async function getOrCreateArchiveChallenge(){
+  if(archiveChallenge) return archiveChallenge;
+  const { data: existing } = await sb.from('challenges').select('*').eq('week_number', 0).maybeSingle();
+  if(existing){ archiveChallenge = existing; return existing; }
+  const { data: created, error } = await sb.from('challenges').insert({
+    week_number: 0,
+    title: 'Archive',
+    parameters: 'Pre-app archive — standout tracks not tied to a weekly challenge.',
+    created_by: currentUser.id
+  }).select().maybeSingle();
+  if(error){ toast(error.message); return null; }
+  archiveChallenge = created;
+  return created;
 }
 
 function renderChallengeList(challenges){
@@ -1121,7 +1143,7 @@ function renderChallengeList(challenges){
 }
 
 $('new-challenge-btn').addEventListener('click', async () => {
-  const { data } = await sb.from('challenges').select('week_number').order('week_number', { ascending: false }).limit(1);
+  const { data } = await sb.from('challenges').select('week_number').gt('week_number', 0).order('week_number', { ascending: false }).limit(1);
   const nextWeek = data && data.length ? data[0].week_number + 1 : 1;
   $('c-week').value = nextWeek;
   $('c-title').value = '';
@@ -1372,19 +1394,22 @@ async function loadAdminData(){
 
 function populateAdminUploadWeekSelect(){
   const sel = $('admin-upload-week');
-  if(allChallenges.length === 0){
-    sel.innerHTML = '<option value="">No challenges yet</option>';
-    sel.disabled = true;
-    return;
-  }
+  const archiveOpt = '<option value="__archive__">Archive \u2014 pre-app (no weekly challenge)</option>';
   sel.disabled = false;
-  sel.innerHTML = allChallenges.map(c => `<option value="${c.id}">Week ${c.week_number} \u2014 ${escapeHtml(c.title)}</option>`).join('');
+  const weekOpts = allChallenges.map(c => `<option value="${c.id}">Week ${c.week_number} \u2014 ${escapeHtml(c.title)}</option>`).join('');
+  sel.innerHTML = weekOpts + archiveOpt;
 }
 
 $('admin-upload-btn').addEventListener('click', async () => {
-  const challengeId = $('admin-upload-week').value;
-  const targetChallenge = allChallenges.find(c => c.id === challengeId);
-  if(!targetChallenge){ toast('Pick a challenge first.'); return; }
+  const sel = $('admin-upload-week').value;
+  let targetChallenge;
+  if(sel === '__archive__'){
+    targetChallenge = await getOrCreateArchiveChallenge();
+    if(!targetChallenge){ toast('Could not open the archive.'); return; }
+  } else {
+    targetChallenge = allChallenges.find(c => c.id === sel);
+    if(!targetChallenge){ toast('Pick a challenge first.'); return; }
+  }
 
   const files = Array.from($('admin-upload-file').files);
   const singleTitle = $('admin-upload-title').value.trim();
