@@ -1,5 +1,10 @@
 name = "session-log"
+main = "worker.js"
 compatibility_date = "2026-01-01"
 
 [assets]
 directory = "."
+binding = "ASSETS"
+
+[ai]
+binding = "AI"

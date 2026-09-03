@@ -674,6 +674,689 @@
 </div>
 <audio id="player-audio" preload="none" crossorigin="anonymous"></audio>
 
+<!-- ==================== CHAIRMAN CUTSCENE (isolated overlay, Shadow DOM) ==================== -->
+<style>
+  #chairman-cutscene{ position:fixed; inset:0; z-index:9999; }
+  #chairman-cutscene[hidden]{ display:none !important; }
+</style>
+<div id="chairman-cutscene" hidden></div>
+<script>
+(function(){
+  "use strict";
+  const host = document.getElementById('chairman-cutscene');
+  if(!host || host.attachShadow === undefined) return;
+  const root = host.attachShadow({ mode:'open' });
+  root.innerHTML = `
+<style>
+  :host{
+    --ground:#020402; --ground-2:#04100a; --ink:#3dff87; --ink-dim:#1a7a45; --ink-bright:#c4ffd8;
+    --glow:rgba(61,255,135,.55); --glow-soft:rgba(61,255,135,.18); --scan:rgba(0,0,0,.28);
+    --mono:"Share Tech Mono",ui-monospace,"Courier New",monospace; --disp:"VT323",var(--mono);
+    display:block; background:var(--ground); color:var(--ink);
+    font-family:var(--mono); font-size:17px; line-height:1.5; overflow:hidden;
+    text-shadow:0 0 4px var(--glow-soft), 0 0 1px var(--glow);
+  }
+  *{ box-sizing:border-box; }
+  .crt{ position:fixed; inset:0; display:flex; flex-direction:column; padding:clamp(14px,3.2vw,40px);
+    background:radial-gradient(120% 120% at 50% 42%, var(--ground-2) 0%, var(--ground) 62%, #000 100%); }
+  .crt::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:60;
+    background:repeating-linear-gradient(to bottom, transparent 0, transparent 2px, var(--scan) 3px, var(--scan) 4px);
+    mix-blend-mode:multiply; opacity:.85; }
+  .crt::after{ content:""; position:fixed; inset:0; pointer-events:none; z-index:61;
+    background:radial-gradient(130% 120% at 50% 50%, transparent 58%, rgba(0,0,0,.55) 100%);
+    animation:flick 6.5s infinite steps(60); }
+  @keyframes flick{ 0%,97%{opacity:1} 98%{opacity:.86} 99%{opacity:1} 100%{opacity:.93} }
+  .beam{ position:fixed; left:0; right:0; height:120px; z-index:59; pointer-events:none;
+    background:linear-gradient(to bottom, transparent, rgba(61,255,135,.05), transparent);
+    animation:sweep 7.5s linear infinite; }
+  @keyframes sweep{ 0%{transform:translateY(-140px)} 100%{transform:translateY(100vh)} }
+  .head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; border-bottom:1px solid var(--ink-dim);
+    padding-bottom:8px; margin-bottom:10px; z-index:2; }
+  .head .sys{ font-family:var(--disp); font-size:1.7rem; letter-spacing:1px; color:var(--ink-bright); line-height:1 }
+  .head .meta{ color:var(--ink-dim); font-size:.82rem; letter-spacing:.5px }
+  .head .sndbtn{ margin-left:auto; background:transparent; border:1px solid var(--ink-dim); color:var(--ink-dim);
+    font-family:var(--mono); font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase; padding:3px 9px;
+    cursor:pointer; text-shadow:inherit; transition:color .12s,border-color .12s; }
+  .head .sndbtn:hover{ color:var(--ink); border-color:var(--ink) }
+  .head .sndbtn[aria-pressed="false"]{ opacity:.55 }
+  .head .badge{ margin-left:8px; border:1px solid var(--ink-dim); color:var(--ink-dim);
+    padding:2px 8px; font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase; }
+  .stage{ flex:1; min-height:0; display:flex; gap:clamp(14px,2.4vw,32px); z-index:2; }
+  .screen{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  #out{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding-right:10px;
+    scrollbar-width:thin; scrollbar-color:var(--ink-dim) transparent; }
+  #out::-webkit-scrollbar{width:8px}
+  #out::-webkit-scrollbar-thumb{background:var(--ink-dim)}
+  .ln{ margin:0 0 .52em; white-space:pre-wrap; word-break:break-word; }
+  .sys-ln{ color:var(--ink-dim); font-size:.9rem; letter-spacing:.4px }
+  .sys-ln b{ color:var(--ink); font-weight:400 }
+  .you{ color:var(--ink-bright); }
+  .you::before{ content:"you> "; color:var(--ink-dim) }
+  .chair{ color:var(--ink); }
+  .chair .who{ color:var(--ink-bright); letter-spacing:2px; font-size:.78rem; display:block; margin-bottom:1px; text-transform:uppercase; }
+  .invert{ display:inline-block; background:var(--ink); color:#000; padding:0 6px; text-shadow:none; letter-spacing:.5px; }
+  .dim{ color:var(--ink-dim) }
+  .cursor{ display:inline-block; width:.62ch; height:1.05em; margin-left:1px; background:var(--ink);
+    transform:translateY(3px); animation:blink 1s steps(1) infinite; box-shadow:0 0 8px var(--glow); }
+  @keyframes blink{50%{opacity:0}}
+  .portrait{ width:clamp(180px,22vw,258px); flex:0 0 auto; display:flex; flex-direction:column; align-items:stretch; opacity:0; transition:opacity .1s; }
+  .portrait.show{ animation:portin 2.6s steps(30) forwards }
+  @keyframes portin{ 0%{opacity:0} 8%{opacity:.9} 10%{opacity:.05} 15%{opacity:.85} 18%{opacity:.15} 26%{opacity:1} 30%{opacity:.4} 34%{opacity:1} 70%{opacity:1} 72%{opacity:.7} 100%{opacity:1} }
+  .frame{ border:1px solid var(--ink-dim); background:linear-gradient(180deg,#031007,#010401); position:relative; overflow:hidden; }
+  .frame::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,.35) 3px 4px); pointer-events:none; }
+  .frame svg{ display:block; width:100%; height:auto }
+  .plabel{ border:1px solid var(--ink-dim); border-top:0; text-align:center; letter-spacing:3px; font-size:.72rem; padding:5px 0; color:var(--ink-bright); text-transform:uppercase; }
+  .psig{ color:var(--ink-dim); font-size:.66rem; text-align:center; margin-top:6px; letter-spacing:1px }
+  .jitter{ animation:jit .18s steps(2) infinite }
+  @keyframes jit{ 0%{transform:translate(0,0)} 50%{transform:translate(.5px,-.5px)} 100%{transform:translate(-.5px,.5px)} }
+  .inputrow{ display:flex; align-items:center; gap:8px; z-index:2; border-top:1px solid var(--ink-dim); padding-top:12px; margin-top:8px; }
+  .caret{ color:var(--ink-bright); font-family:var(--disp); font-size:1.5rem; line-height:1 }
+  #in{ flex:1; background:transparent; border:0; outline:0; color:var(--ink-bright); font-family:var(--mono); font-size:1.05rem; letter-spacing:.5px; caret-color:transparent; text-shadow:0 0 5px var(--glow-soft); }
+  #in:disabled{ opacity:.4 }
+  .fakecaret{ width:.6ch; height:1.15em; background:var(--ink); box-shadow:0 0 8px var(--glow); animation:blink 1s steps(1) infinite }
+  .hint{ color:var(--ink-dim); font-size:.74rem; letter-spacing:.5px; margin-left:6px }
+  .off{ display:none !important }
+  @media (max-width:640px){
+    :host{font-size:15px}
+    .portrait{ position:absolute; top:64px; right:16px; width:120px; z-index:3 }
+    .stage{ position:relative }
+    .plabel{ font-size:.6rem; letter-spacing:1.5px }
+    .psig{ display:none }
+    .hint{ display:none }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .crt::after,.beam{ animation:none }
+    .portrait.show{ animation:none; opacity:1 }
+    .cursor,.fakecaret{ animation:none }
+    .jitter{ animation:none }
+  }
+</style>
+<div class="crt">
+  <div class="beam" aria-hidden="true"></div>
+  <div class="head">
+    <span class="sys">SESSION&nbsp;LOG</span>
+    <span class="meta">secure terminal · node 7</span>
+    <button class="sndbtn" id="snd" type="button" aria-pressed="true" title="Toggle terminal sound">◉ snd on</button>
+    <span class="badge" id="badge">uplink</span>
+  </div>
+  <div class="stage">
+    <div class="screen">
+      <div id="out" role="log" aria-live="polite" aria-label="Chairman terminal"></div>
+    </div>
+    <aside class="portrait" id="portrait" aria-hidden="true">
+      <div class="frame">
+        <svg viewBox="0 0 200 240" role="img" aria-label="Silhouette of The Chairman">
+          <defs>
+            <radialGradient id="halo" cx="50%" cy="34%" r="55%">
+              <stop offset="0%" stop-color="#0f6d38"/><stop offset="55%" stop-color="#052414"/><stop offset="100%" stop-color="#010401"/>
+            </radialGradient>
+            <filter id="eyeglow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="200" height="240" fill="url(#halo)"/>
+          <path d="M40 240 V150 Q40 120 66 120 H134 Q160 120 160 150 V240 Z" fill="#010703"/>
+          <path d="M28 240 V196 Q28 168 62 160 L80 154 H120 L138 160 Q172 168 172 196 V240 Z" fill="#020c06"/>
+          <path d="M92 156 L100 210 L108 156 L120 162 L110 240 H90 L80 162 Z" fill="#010904"/>
+          <path d="M97 168 L103 168 L108 206 L100 220 L92 206 Z" fill="#03130a"/>
+          <rect x="90" y="140" width="20" height="24" fill="#03170c"/>
+          <ellipse cx="100" cy="104" rx="34" ry="40" fill="#020e07"/>
+          <path d="M66 92 Q100 60 134 92 Q120 74 100 72 Q80 74 66 92 Z" fill="#010b05"/>
+          <g filter="url(#eyeglow)">
+            <ellipse cx="86" cy="104" rx="5.4" ry="3" fill="#c4ffd8"/><ellipse cx="114" cy="104" rx="5.4" ry="3" fill="#c4ffd8"/>
+          </g>
+          <g fill="#04140b" stroke="#0c5c31" stroke-width="1.2">
+            <rect x="118" y="212" width="52" height="12" rx="3" transform="rotate(-12 144 218)"/>
+            <rect x="150" y="214" width="30" height="7" rx="2" transform="rotate(-12 165 217)"/>
+          </g>
+          <rect x="0" y="70" width="200" height="2" fill="#0a3f22" opacity=".5"/>
+          <rect x="0" y="150" width="200" height="3" fill="#0a3f22" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="plabel">The Chairman</div>
+      <div class="psig">signal: <span id="sig">weak</span> · gavel online</div>
+    </aside>
+  </div>
+  <form class="inputrow" id="form" autocomplete="off">
+    <span class="caret">&gt;</span>
+    <input id="in" name="in" disabled aria-label="Your reply" spellcheck="false" maxlength="160"/>
+    <span class="fakecaret off" id="fc"></span>
+    <span class="hint" id="hint"></span>
+  </form>
+</div>`;
+
+  // ---------- element refs (inside the shadow root) ----------
+  const out   = root.getElementById('out');
+  const input = root.getElementById('in');
+  const form  = root.getElementById('form');
+  const fc    = root.getElementById('fc');
+  const hint  = root.getElementById('hint');
+  const portrait = root.getElementById('portrait');
+  const badge = root.getElementById('badge');
+  const sig   = root.getElementById('sig');
+
+  const reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const wait = ms => new Promise(r=>setTimeout(r, reduce?Math.min(ms,120):ms));
+  const scroll = ()=> out.scrollTop = out.scrollHeight;
+  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+  let pending = null, botMode = false, entered = false;
+  let writerName = null, CHALLENGE = null, onEnterCb = null, mode = 'intro';
+
+  // ---------- synthesized terminal sound (Web Audio) ----------
+  const Sound = (function(){
+    let ctx=null, master=null, on=true;
+    try{ on = (localStorage.getItem('sessionlog.snd') !== 'off'); }catch(e){}
+    function ensure(){
+      if(!ctx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+        ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.16; master.connect(ctx.destination); }
+      if(ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(freq, dur, type, vol){ if(!on) return; const c = ensure(); if(!c) return;
+      const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+      o.type = type || 'square'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol || 0.2, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02); }
+    function sweep(from, to, dur, type, vol){ if(!on) return; const c = ensure(); if(!c) return;
+      const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+      o.type = type || 'sawtooth'; o.frequency.setValueAtTime(from, t); o.frequency.exponentialRampToValueAtTime(to, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol || 0.12, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.03); }
+    return {
+      blip(ch){ if(!on || ch === ' ' || ch === '\n' || ch === '\t') return;
+        const punct = '.?!,;:—'.indexOf(ch) >= 0;
+        if(punct) tone(200 + Math.random()*40, 0.05, 'square', 0.16); else tone(680 + Math.random()*420, 0.016, 'square', 0.08); },
+      key(){ tone(300, 0.028, 'square', 0.13); },
+      beep(f, d){ tone(f || 880, d || 0.09, 'triangle', 0.2); },
+      lock(){ sweep(160, 1150, 0.55, 'sawtooth', 0.12); },
+      buzz(){ tone(88, 0.32, 'sawtooth', 0.18); },
+      resume(){ ensure(); },
+      toggle(){ on = !on; if(on) ensure(); try{ localStorage.setItem('sessionlog.snd', on ? 'on' : 'off'); }catch(e){} return on; },
+      isOn(){ return on; }
+    };
+  })();
+
+  // ---------- input hygiene ----------
+  function isProfane(s){
+    return /\b(f+\W*u+\W*c+\W*k+\w*|sh[i1!]t\w*|b[i1]tch\w*|a(ss|rse)h[o0]le|bastard|c[o0]ck\w*|d[i1]ck\w*|piss\w*|wank\w*|bollocks|tw[a4]t|prick|slut|whore|cunt|stfu|dammit|goddam\w*)\b/i.test(s)
+        || /\b(screw|suck|f\*+k|s\*+t)\b/i.test(s);
+  }
+  function isGibberish(s){
+    const t = s.trim().toLowerCase(); if (!t) return true;
+    const letters = t.replace(/[^a-z]/g,'');
+    if (t.length >= 3 && letters.length / t.length < 0.4) return true;
+    if (/(.)\1{4,}/.test(t)) return true;
+    if (/^[bcdfghjklmnpqrstvwxyz]{5,}$/.test(letters)) return true;
+    if (/\b(asdf|sdfg|qwer|wert|zxcv|xcvb|hjkl|jkl|fghj|uiop|nmnm)\b/.test(t)) return true;
+    if (!/\s/.test(t) && t.length > 22) return true;
+    return false;
+  }
+  const NAME_STOP = new Set(['ready','good','here','fine','ok','okay','sorry','back','done','sure','trying',
+    'curious','listening','confused','lost','new','going','just','still','not','in','out','no','yes','yeah',
+    'waiting','begin','great','cool','tired','busy','late','early','a','an','the','so','and','but','sir',
+    'chairman','writer','musician','nobody','anybody','someone','anyone','myself','later','maybe','now','soon',
+    'anything','whatever','nothing','wondering','asking','stuck','excited','nervous','scared','hungry']);
+  const cap = w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+  const escapeReg = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  function cleanNameToken(w){
+    if(!w) return null; w = w.replace(/[.,!?'"]+$/,'').trim();
+    if(w.length < 2 || w.length > 24) return null;
+    const low = w.toLowerCase();
+    if(NAME_STOP.has(low) || isProfane(w) || isGibberish(w)) return null;
+    return w.slice(0,24);
+  }
+  function trySetName(text){
+    const low = text.toLowerCase();
+    const denied = /\b(my name'?s? not|that'?s not my name|not my name|wrong name|i'?m not \w+|im not \w+|no it'?s not)\b/.test(low)
+      || (writerName && new RegExp('\\bnot\\s+'+escapeReg(writerName.toLowerCase())+'\\b').test(low));
+    const cue = /(?:my name(?:'?s| is)|call me|the name(?:'?s| is)|name'?s|i(?:'?m| am)|im|it'?s|actually,?\s*(?:it'?s|i'?m|im))\s+(?:not \w+[,\s]+(?:it'?s|i'?m|im)\s+)?([a-z][a-z.'\-]{1,23})\s*[.!]*$/i;
+    const m = text.match(cue);
+    const cand = m ? cleanNameToken(m[1]) : null;
+    if (cand){ return { set: cand, reply: cap(cand) + (denied
+      ? ", then — the record is amended. I don't make the same mistake twice."
+      : ". Noted — and remembered. The record is updated.") }; }
+    if (denied){ return { set: null, reply: "Then who ARE you? Give me a name — \"call me Alex\" — and I'll carve it in properly." }; }
+    return null;
+  }
+
+  const gibberishLines = [
+    "Those aren't words, and I've heard a great many words. Try again, in a language I hold court in.",
+    "My decoder just filed a complaint. Say that again — with vowels.",
+    "That is either a bold new genre or a keyboard falling down stairs. Ask me something real.",
+    "I preside over songs, not seizures on a number row. Rephrase."
+  ];
+  const NEARBY = [
+    { re:/song|track|tune|demo|beat|record|upload|submit|mp3|file|send|post|entry/, label:"uploading a take" },
+    { re:/dead\s*line|due|time|when|clock|hour|\bday\b|week|date|\blate\b|deadline/, label:"the deadline" },
+    { re:/vote|like|fav|best|rank|rate|score|\bwin|winner|prize/, label:"voting and winners" },
+    { re:/rule|how|start|play|point|work|process|steps?/, label:"how this works" },
+    { re:/who|chairman|gavel|admin|charge|power|boss|\bmod\b/, label:"who I am and the gavel" },
+    { re:/money|free|cost|\bpay|price|bill|cheap|expensive/, label:"what it costs" },
+    { re:/phone|mobile|\bapp\b|device|ios|android/, label:"using it on your phone" },
+    { re:/comment|chat|talk|thread|react|reply|bubble|discuss/, label:"comments and reactions" },
+    { re:/challenge|constraint|theme|genre|instrument|prompt|limit/, label:"the weekly challenge" },
+    { re:/name|remember|account|sign|log ?in|invite|join|member/, label:"getting in" },
+    { re:/listen|player|playlist|hits|visuali[sz]er|hear|audio/, label:"listening and Greatest Hits" }
+  ];
+  function suggestNearby(text){ const t = text.toLowerCase(), o = [];
+    for (const n of NEARBY){ if (n.re.test(t) && !o.includes(n.label)){ o.push(n.label); if (o.length===2) break; } } return o; }
+  const nearTemplates = [
+    x => `That's not in my ledger — but if you're circling ${x}, ask me plainly and I'll hold forth.`,
+    x => `I can't parse that, though it smells like you want ${x}. Say the word.`,
+    x => `Not a phrase I keep. If you meant ${x}, put it to me directly.`,
+    x => `You've lost me — but ${x} is right here if that's the door you're knocking on.`
+  ];
+  let nearI = 0;
+  function deflectWith(near){
+    if (near && near.length){ const x = near.length > 1 ? `${near[0]} or ${near[1]}` : near[0];
+      return nearTemplates[nearI++ % nearTemplates.length](x); }
+    return deflect[deflectI++ % deflect.length];
+  }
+
+  // ---------- rendering ----------
+  function el(cls, html){ const p = document.createElement('p'); p.className = 'ln ' + cls;
+    if (html !== undefined) p.innerHTML = html; out.appendChild(p); scroll(); return p; }
+  async function type(text, {cls='chair', who=null, speed=22, pause=360}={}){
+    const p = el(cls, '');
+    if (who){ const w=document.createElement('span'); w.className='who'; w.textContent=who; p.appendChild(w); }
+    const span = document.createElement('span'); p.appendChild(span);
+    const cur = document.createElement('span'); cur.className='cursor'; p.appendChild(cur);
+    for (let i=0;i<text.length;i++){ span.textContent += text[i]; scroll();
+      const c = text[i]; if (!reduce) Sound.blip(c);
+      let d = speed; if (c==='.'||c==='?'||c==='!') d = speed*7; else if (c===','||c===';'||c===':'||c==='—') d = speed*3;
+      await wait(reduce?0:d); }
+    cur.remove(); await wait(pause); return p;
+  }
+  const sysline = (html)=> { el('sys-ln', html); };
+  const escapeHtml = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const echo = text => el('you', escapeHtml(text));
+
+  // ---------- input handling ----------
+  function prompt(kind, hintText){ input.disabled = false; input.focus();
+    hint.textContent = hintText || ''; fc.classList.remove('off');
+    return new Promise(res=>{ pending = {kind, resolve:res}; }); }
+  function lock(){ input.disabled = true; hint.textContent=''; }
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault(); Sound.resume();
+    const val = input.value.trim(); if (val) Sound.key();
+    if (pending && pending.kind==='gate'){ input.value=''; lock(); const r = pending.resolve; pending=null; r(); return; }
+    if (pending && pending.kind==='await'){ if (!val) return; input.value=''; echo(val); lock(); const r = pending.resolve; pending=null; r(val); return; }
+    if (pending && pending.kind==='interlude'){ input.value='';
+      if (!val){ lock(); const r=pending.resolve; pending=null; r(null); return; }
+      echo(val); lock(); const r=pending.resolve; pending=null; r(val); return; }
+    if (botMode){ if (!val) return; input.value=''; echo(val); handleBot(val); return; }
+  });
+  document.addEventListener('click', ()=>{ if(host.hidden) return; Sound.resume(); if(!input.disabled) input.focus(); });
+
+  const sndBtn = root.getElementById('snd');
+  function paintSnd(){ const on = Sound.isOn(); sndBtn.textContent = on ? '◉ snd on' : '◌ snd off'; sndBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  paintSnd();
+  sndBtn.addEventListener('click', e=>{ e.stopPropagation(); const on = Sound.toggle(); paintSnd(); if (on) Sound.beep(760, 0.08); });
+
+  // ---------- classifiers ----------
+  function classifyOpener(s){ const t = s.toLowerCase();
+    if (isProfane(s)) return 'hostile'; if (isGibberish(s)) return 'gibberish';
+    if (/\b(f[\W_]*u+c?k|shit|screw you|piss off|stupid|dumb|shut up|hate)\b/.test(t)) return 'hostile';
+    if (/\?|who are you|what is this|what.?s this|where am i|whats going on|explain/.test(t)) return 'question';
+    if (/\b(yes|yeah|yep|yup|obviously|of course|damn right|hell yes|absolutely|definitely|the best|greatest|genius|pro|professional|legend|god|sure am|i am)\b/.test(t)) return 'cocky';
+    if (/\b(no|nope|not really|dunno|i (don.?t|dont) know|idk|maybe|kind of|kinda|sort of|trying|learning|hope so|we.?ll see|amateur|hobby|beginner|guess|barely)\b/.test(t)) return 'humble';
+    return 'shrug'; }
+  const openerReply = {
+    cocky:   "Confidence. I do enjoy confidence — it makes the fall so much more instructive.",
+    humble:  "Honesty. Rarer than talent, and worth more. We'll get along.",
+    question:"Questions already. Good. Curiosity is the only entrance fee I accept.",
+    hostile: "Charming. Save the mouth for the mix. The deadline is not impressed, and neither am I.",
+    gibberish:"…I'll assume that was nerves and not a stroke. Let's try this in words.",
+    shrug:   "…I'll take that as a yes. They always mean yes."
+  };
+  function classifyReaction(s){ const t = s.toLowerCase();
+    if (isProfane(s)) return 'hostile'; if (isGibberish(s)) return 'gibberish';
+    if (/\?|\b(who|what|why|how|where|when)\b/.test(t)) return 'question';
+    if (/\b(wow|whoa|woah|cool|nice|damn|holy|scary|scared|intimidat|impressive|omg|creepy|nervous|yikes|okay wow|ok wow)\b/.test(t)) return 'awe';
+    if (/\b(so what|who cares|big deal|whatever|meh|ok|okay|sure|and|lol|lmao|nice try|prove it|not scared|boring|cringe|yeah right)\b/.test(t)) return 'defiant';
+    return 'neutral'; }
+  const reactionReply = {
+    hostile: "Temper, already — and I've barely begun. Save it. You'll need it.",
+    gibberish:"…I'll let that pass. Nerves do strange things to a keyboard.",
+    question:"Questions can wait a heartbeat. Let the title settle first.",
+    awe:     "Good. A little awe is healthy. Hold onto it — you'll want the reminder.",
+    defiant: "Defiance. I do respect it. It photographs so beautifully beside a missed deadline.",
+    neutral: "Mm. Say what you like — the gavel doesn't require your approval."
+  };
+
+  // ---------- interlude ----------
+  const continueRE = /^(no+|nope|nah+|n|continue|next|go( on| ahead)?|proceed|ok(ay)?|k|ready|nothing|none|nada|done|carry on|move on|keep going|sure|i.?m good|not really|no thanks|skip)$/;
+  const reprompts = [
+    "Anything else? Or press Enter.", "Go on — another. Or Enter to continue.",
+    "More? I have time. You have less. Enter to move on.", "Ask again, or press Enter and we proceed.",
+    "Still curious? Speak. Otherwise, Enter."
+  ];
+  async function interlude(){
+    while(true){
+      const ans = await prompt('interlude', 'ask a question · or press Enter to go on');
+      await wait(0);
+      if (ans === null) return;
+      if (continueRE.test(ans.trim().toLowerCase())) return;
+      lock(); await wait(reduce?40:220);
+      await speak(ans, false);
+      await type(pick(reprompts), {speed:24, pause:120});
+    }
+  }
+
+  function revealPortrait(){
+    portrait.setAttribute('aria-hidden','false'); portrait.classList.add('show'); Sound.lock();
+    if (!reduce){ const svg = portrait.querySelector('svg'); svg.classList.add('jitter'); setTimeout(()=>svg.classList.remove('jitter'), 900); }
+  }
+  async function threat(){
+    const p = el('chair',''); const s = document.createElement('span'); s.className='invert';
+    s.textContent = " oh. you don't want to do that. "; p.appendChild(s); scroll(); Sound.buzz();
+    if (!reduce){ for (let i=0;i<3;i++){ s.style.visibility='hidden'; await wait(90); s.style.visibility='visible'; Sound.buzz(); await wait(150); } }
+    await wait(300);
+  }
+
+  // ---------- the full intro (first login) ----------
+  async function runIntro(){
+    badge.textContent = 'uplink';
+    sysline('<span class="dim">establishing secure uplink…</span>'); await wait(650);
+    sysline('handshake … <b>ok</b>'); await wait(300);
+    sysline('decrypting invitation … <b>ok</b>'); await wait(300);
+    sysline('identity <b>confirmed</b> — <span class="dim">welcome, ' + escapeHtml(writerName || 'writer') + '</span>'); await wait(480);
+    badge.textContent = 'live';
+    el('sys-ln','<span class="dim">──────────────────────────────</span>'); await wait(360);
+
+    await type("So you think you are a musician?", {speed:34, pause:280});
+    const a1 = await prompt('await', 'type anything, then Enter');
+    await wait(140);
+    await type(openerReply[classifyOpener(a1)], {speed:24});
+
+    await type("Allow me to introduce myself.", {speed:26, pause:200});
+    revealPortrait();
+    await wait(reduce?200:1400);
+    await type("I am THE CHAIRMAN.", {who:'incoming transmission', speed:40, pause:200});
+    sig.textContent = 'locked';
+    await wait(reduce?250:1000);
+    el('sys-ln','<span class="dim">…</span>');
+    await wait(reduce?150:700);
+    const r1 = await prompt('await', 'say something');
+    await wait(140);
+    await type(reactionReply[classifyReaction(r1)], {speed:24});
+
+    await type("Not a name. A chair. Whoever holds the gavel holds the room — this week, that is me.", {speed:22});
+    await type("There are rules. I'll give them to you in pieces, so they take.", {speed:24, pause:160});
+    await interlude();
+    await type("One: every week there is a challenge. A constraint — a genre, a limit, a length. You write a song that lives inside it.", {speed:20});
+    await interlude();
+    await type("Two: you upload your take. You vote on the others — honestly. You listen, and you talk in the threads.", {speed:20});
+    await interlude();
+    await type("Three, and this is the one people forget:", {speed:26, pause:220});
+    await type("One song. One deadline. No committee, no excuses.", {speed:24});
+    await wait(160);
+    await type("And if you fail? If you miss the deadline?", {speed:30, pause:240});
+    await threat();
+    await wait(reduce?150:650);
+    await type("…I'm teasing. Mostly.", {speed:34, pause:180});
+    await type("Your name simply appears with a small \"submitted late\" beside it. Where everyone can see it. Forever.", {speed:20});
+    await interlude();
+    await type("That is the whole religion. The floor is yours now — ask me anything you like, for as long as you like.", {speed:22, pause:140});
+    await type("And when your nerve returns, type BEGIN to come inside.", {speed:24, pause:120});
+    openBot();
+  }
+
+  // ---------- the weekly return (announce a new challenge) ----------
+  async function runAnnounce(){
+    badge.textContent = 'uplink';
+    sysline('<span class="dim">re-establishing uplink…</span>'); await wait(520);
+    sysline('identity <b>recognised</b> — <span class="dim">' + escapeHtml(writerName || 'writer') + '</span>'); await wait(340);
+    badge.textContent = 'live';
+    el('sys-ln','<span class="dim">──────────────────────────────</span>'); await wait(260);
+    revealPortrait();
+    await wait(reduce?200:1100);
+    await type((writerName ? writerName + '. ' : '') + "Back so soon? Good — there's fresh work.", {who:'incoming transmission', speed:30, pause:220});
+    sig.textContent = 'locked';
+    await announceChallenge();
+    await type("Type BEGIN when you're ready to face it — or ask me about it first.", {speed:24, pause:120});
+    openBot();
+  }
+
+  // ============================================================
+  //  THE CHAIRMAN — keyword brain
+  // ============================================================
+  const KB = [
+    { id:'begin', test:/\b(begin|enter|start|let me in|come in|i.?m ready|ready now|open the door|go inside)\b/,
+      replies:[["The door is open. Try to be worth the electricity."],["Finally. Come in — and mind the wet paint on your reputation."],["Good. Enough talk. Inside with you."]] },
+    { id:'recall', test:/\b(who am i|what.?s my name|do you (remember|know) me|remember my name|know who i am)\b/, replies:[["__DYNAMIC__"]] },
+    { id:'forget', test:/\b(forget me|forget everything|forget about me|reset me|wipe (me|us|it)|start over|new writer)\b/,
+      replies:[["Done. Wiped clean, as though we never met."],["Forgotten. It stings my pride, but the record is clear."]] },
+    { id:'wargames', test:/\b(shall we play a game|falken|joshua|thermonuclear|wargames|war games|play a game|tic.?tac.?toe)\b/,
+      replies:[["A strange game. The only winning move is to write the song. How about a nice weekly challenge instead?"],["I was hoping you'd notice. Yes — the reference is deliberate. No, we are not launching missiles. We are launching demos."]] },
+    { id:'who', test:/\b(who are you|who.?s the chairman|what are you|are you (a )?(bot|ai|real|human|person|robot)|your name)\b/,
+      replies:[["I am the Chairman. The office, not the man. The gavel changes hands; the menace is inherited."],["Who am I? Whoever currently holds the role. Today, unfortunately for you, that is me."],["A voice with a gavel. Beyond that, need-to-know — and you don't."]] },
+    { id:'maker', test:/\b(who (made|built|created)|source code|github|open source|repo|supabase|cloudflare|how.?s (this|it) built|tech stack)\b/,
+      replies:[["Built in conversation, one stubborn evening at a time — a single page up front, a Postgres cellar underneath, hosted on the cheap and proud of it."],["One page, no framework, no build step. It runs on free tiers by design, so no one can hold a bill over the music."]] },
+    { id:'credited', test:/\b(credit|credited|on (someone|their) behalf|backfill|no account|someone else.?s|for a friend|behalf|attribute)\b/,
+      replies:[["You may post a take under someone else's name — the credited-artist field exists precisely so I can backfill the archive before a person has even joined."],["Upload for someone who isn't here yet and credit it properly. When they arrive, their history is already waiting."]] },
+    { id:'metadata', test:/\b(id3|metadata|tag|tags|tagged|title.*artist|artist.*title|album (art|name)|file (name|info))\b/,
+      replies:[["Every MP3 is tagged in your own browser before it leaves — title, artist, album. No naked, nameless uploads in my house."],["Proper ID3 tags, written client-side. Titles auto-derive from filenames on bulk upload."]] },
+    { id:'storage', test:/\b(bitrate|quality|storage|1 ?gb|gigabyte|why mp3|file size|too big|space|full|cap|limit on)\b/,
+      replies:[["MP3 only, moderate bitrate encouraged. There is a one-gigabyte cellar and no card on file — when it fills, it politely stops rather than billing anyone."],["We hoard sensibly. No lossless leviathans."]] },
+    { id:'bulk', test:/\b(bulk|multiple files|many (songs|takes)|batch|all at once|several tracks|upload a lot)\b/,
+      replies:[["Bulk upload works — drop the lot, and each file's title is derived from its name."]] },
+    { id:'multi-take', test:/\b(more than one|second (song|take)|another (entry|song)|resubmit|re-?upload|multiple (entries|takes)|two songs)\b/,
+      replies:[["One challenge, one voice — submit the take you're willing to defend."],["Pick your take and stand behind it. Endless resubmission is how a deadline dies of old age."]] },
+    { id:'edit-delete', test:/\b(edit|delete|remove|change my|replace (the )?(audio|file|song)|fix my|mistake|took it down|undo)\b/,
+      replies:[["The Chairman can edit or delete any take or comment, and swap the audio out from under it — re-tagged automatically. You, on the other hand, ask nicely."],["Corrections run through the gavel. It is a power I wield with great reluctance and greater enjoyment."]] },
+    { id:'late', test:/\b(late|missed|after (the )?deadline|submitted late|too late|past due|overdue)\b/,
+      replies:[["Miss the deadline and nothing dramatic happens — nothing except a permanent, tasteful \"submitted late\" beside your name."],["The door doesn't slam. It just quietly notes the hour you arrived, forever, for everyone."]] },
+    { id:'deadline', test:/\b(deadline|due|when.?s it due|time limit|extension|how long|cutoff|clock|timezone)\b/,
+      replies:[["Each challenge carries its own deadline. I do not grant extensions on charm."],["The clock is the whole point. It turns \"someday\" into a song. Beat it."]] },
+    { id:'greatesthits', test:/\b(greatest hits|top ?voted|best of|last week.?s best|hall of fame|preload)\b/,
+      replies:[["Greatest Hits gathers the previous week's most-voted takes and cues them up the instant you open the app. Consider it a warning shot."],["The winners of last week greet you at the door. Motivation, or intimidation. I never specify which."]] },
+    { id:'playlist', test:/\b(general playlist|all (the )?songs|every (song|submission)|full playlist|whole archive|everything ever)\b/,
+      replies:[["The General Playlist holds every submission ever made, across every week, updating live. It is a long memory. So am I."]] },
+    { id:'player', test:/\b(player|visualizer|bottom (bar|player)|audio.?reactive|listen|hear|playback|equalizer|eq)\b/,
+      replies:[["The player lives at the bottom and never leaves. It breathes with the music — a real visualizer, not a decoration."],["Persistent playback, and a visualizer that actually watches the waveform. Listening here is the sport."]] },
+    { id:'vote', test:/\b(vote|voting|votes|rate|rank|tally|score|upvote)\b/,
+      replies:[["One vote per person per take. Vote for the song that moved you, not the friend who'll notice."],["Voting is one per person per submission, and the tally decides who ascends to Greatest Hits."]] },
+    { id:'winner', test:/\b(win|winner|won|prize|reward|what do i get|does winning|first place|beat|champion)\b/,
+      replies:[["The prize is glory and a slot in Greatest Hits, preloaded for everyone next week. There is no cash."],["Winning buys you the top of the pile, in everyone's ears, before the next challenge begins. Priceless, and worth precisely that."]] },
+    { id:'reactions', test:/\b(reaction|react|glyph|thumbs|fire|heart|clap|laugh|haha|wow|eight (icons|reactions)|emoji|sticker)\b/,
+      replies:[["Eight reactions — thumbs up and down, laugh, haha, fire, heart, clap, wow — each hand-drawn in our green. No garish full-colour emoji."],["Hold a message and the reaction picker rises: eight little living glyphs, all the same phosphor."]] },
+    { id:'comment', test:/\b(comment|comments|chat|thread|reply|quote|talk|discuss|speech bubble|feedback|critique)\b/,
+      replies:[["Talk in the threads — they read as speech bubbles. Hold a message to quote it in your reply. Cruelty is fine if it's witty; laziness is not."],["Discussion is threaded and quotable. A silent room is a dead one, and I do not preside over corpses."]] },
+    { id:'suggest', test:/\b(suggest|suggestion|propose|next week|next challenge|new challenge|vote on (the )?challenge|random( pick)?|pick the challenge|decide the challenge)\b/,
+      replies:[["Step past the current week and you reach the suggestion floor — propose a constraint, vote on the rest. The top vote becomes next week's challenge. Or I let the machine choose at random, to watch you sweat."],["Next week is a small democracy: anyone proposes, everyone votes, the winner rules."]] },
+    { id:'history', test:/\b(history|previous weeks?|past challenges?|slider|prev|older|archive of (weeks|challenges)|before)\b/,
+      replies:[["A slider walks you through the weeks — previous, current, next."],["The past is a slide away. Every challenge that ran still stands in the record."]] },
+    { id:'thisweek', test:/\b(this week|current challenge|what.?s the challenge|what am i writing|now open|what.?s open|challenge this week|the brief)\b/, replies:[["__DYNAMIC__"]] },
+    { id:'challenge', test:/\b(challenge|constraint|theme|prompt|parameter|genre|instrument|rule for the week|assignment|topic)\b/,
+      replies:[["A challenge is a title and a parameter — a genre, an instrument limit, a length, a mood. The cage is the gift."],["Whatever the group last voted into being. Restriction breeds invention. Embrace the wall."]] },
+    { id:'rules', test:/\b(rules?|how does this work|what do i do|how (do i|to) play|the point|how it works|what is (this|session log)|overview)\b/,
+      replies:[["Each week a challenge with a constraint. You write to it, upload one take, vote honestly, and talk in the threads. Meet the deadline."],["Write within the week's constraint. Post one song. Vote, listen, argue. Don't be late."]] },
+    { id:'admin', test:/\b(admin|chairman role|become (the )?chairman|who.?s in charge|gavel|power|moderator|\bmod\b|permission|row.?level|rls|take (the|over) (gavel|role)|self.?grant)\b/,
+      replies:[["The gavel is reassignable — the role, not the person. And no, you cannot grant it to yourself; the database physically refuses. A trigger slaps the hand."],["Power here is a chair, not a throne — it passes at the current holder's word. Try to seize it and row-level security laughs at you. Politely. In Postgres."]] },
+    { id:'account', test:/\b(sign ?in|log ?in|account|password|magic link|invite|join|register|sign ?up|how do i get in)\b/,
+      replies:[["First entry is by magic link — invite only, no public sign-up. Set a password afterward so you needn't check your email every time."],["You're here because someone vouched for you. Don't embarrass your sponsor."]] },
+    { id:'privacy', test:/\b(who can see|is this (private|public|secret)|invite.?only|members?|outsiders|share (it|this)|anyone see)\b/,
+      replies:[["Private, invite-only, no public door. What's posted here stays among the invited."],["No outsiders. The room is small on purpose — that's what makes the honesty possible."]] },
+    { id:'mobile', test:/\b(phone|mobile|ios|android|app store|on my phone|does it work on|tablet|desktop only)\b/,
+      replies:[["It runs in a browser — phone or desktop, wherever guilt finds you. No app to install, only a deadline to meet."]] },
+    { id:'cost', test:/\b(free|cost|pay|paid|subscription|price|money|charge|bill|expensive|credit card)\b/,
+      replies:[["Free, by design and by spine. Everything sits on free tiers with no card attached — so no one can ever hold a bill over the music."]] },
+    { id:'block', test:/\b(writer.?s block|no idea|stuck|blank|inspiration|what (should|do) i write|can.?t think|out of ideas|nothing to write)\b/,
+      replies:[["Blocked? Good. The constraint is your cure. Set one rule and obey it stupidly — a song will fall out of the obedience."],["Write the obvious thing badly, then flinch and write the true thing. Start ugly."]] },
+    { id:'good', test:/\b(am i good|good enough|talent|talented|nervous|scared|worried|afraid|intimidated|out of my league|embarrass)\b/,
+      replies:[["Good enough? Irrelevant. The challenge asks for finished, on time. Talent is optional. Delivery is not."],["Everyone here was once certain they couldn't. Bad songs on time beat perfect songs that never exist."]] },
+    { id:'cantplay', test:/\b(can.?t (sing|play)|no instruments?|tone.?deaf|not a (real )?musician|bad at music|only (use|have)|don.?t know how)\b/,
+      replies:[["No instrument? A voice memo and a table to knock on is an instrument. Your lack of gear is simply another constraint. Use it."],["The challenge never asked for a conservatory. Hum it into your phone if you must — just finish."]] },
+    { id:'why', test:/\b(why (bother|do this|should i|would i)|what.?s the point|pointless|purpose|worth it|why does this exist)\b/,
+      replies:[["Why? Because a deadline and a small room full of witnesses will pull more music out of you in a year than 'someday' will in a decade."],["Because finishing is a skill, and this is the gym. You come for the challenge and stay for the fear of the badge."]] },
+    { id:'hostile', test:/\b(f[\W_]*u+c?k|shit|screw (you|this)|shut up|stupid|dumb|i hate|you suck|piss off|idiot)\b/,
+      replies:[["Charming. Save the venom for the lyrics — they could use it."],["Noted, and forgiven, and utterly beside the point. Now: rules, voting, or BEGIN?"],["Temper. I've been sworn at by better, in better meter."]] },
+    { id:'hello', test:/\b(hi|hey|hello|yo|sup|greetings|good (morning|evening|day)|howdy)\b/,
+      replies:[["A greeting. How civilised. Now ask me something that matters."],["Hello yourself. The clock is still running."],["Well met. Briefly. What do you need to know?"]] },
+    { id:'thanks', test:/\b(thank|thanks|thx|cheers|appreciate|nice|cool|awesome|love (this|it)|amazing|great)\b/,
+      replies:[["Gratitude noted and filed. Sentiment will not extend your deadline."],["You're welcome. Channel the goodwill into a finished take."],["Kind. Useless, but kind. Go write."]] },
+    { id:'bye', test:/\b(bye|goodbye|later|see ya|cya|exit|quit|leave|log ?out|i.?m done|gotta go)\b/,
+      replies:[["Leaving already? The song won't write itself — though I'll be here, gavel warm, when you return."],["Go, then. The deadline follows you out the door."],["Dismissed. But not forgotten. I never forget."]] },
+    { id:'help', test:/\b(help|commands?|what can i (ask|say|do)|options|menu|topics|list)\b/,
+      replies:[["Quiz me on any of it — the challenge, deadlines, uploading, voting, comments, reactions, the player, Greatest Hits, the gavel, or how to get in. Or stop stalling and type BEGIN."]] },
+  ];
+  const deflect = [
+    "I'll pretend I understood that. Ask me about the challenge, the deadline, or how to submit.",
+    "A cryptic one. I respect it, but I can't act on it. Try: rules, voting, uploading, or the gavel.",
+    "That is above even my pay grade, and I set the pay. Ask me something about the challenge instead.",
+    "You've reached the edge of my vocabulary and my patience at once. Rules? Deadline? BEGIN?",
+    "Static. Rephrase — challenge, upload, vote, comments, reactions — and I'll answer.",
+    "I hold a gavel, not a crystal ball. Ask me how this place works.",
+    "Hm. Not in my ledger. Try the deadline, the voting, or the Greatest Hits.",
+    "Even I don't know that one, and I know a distressing amount. Ask about the challenge.",
+    "Speak plainer and I'll speak longer. What about the rules, or getting in?"
+  ];
+  let deflectI = 0;
+  const notYet = [
+    "Patience. I'm still talking. You'll have your BEGIN when I'm finished.",
+    "Eager — noted. But no one enters mid-sentence. Mine. Press Enter to let me continue.",
+    "Not yet. Sit. Listen. The door opens when I say it does."
+  ];
+  const lastPick = {};
+  function pickReply(entry){ const arr = entry.replies; if (arr.length === 1) return arr[0];
+    let i; do { i = Math.floor(Math.random()*arr.length); } while (i === lastPick[entry.id]); lastPick[entry.id] = i; return arr[i]; }
+  function match(text){ const t = ' ' + text.toLowerCase() + ' '; for (const e of KB){ if (e.test.test(t)) return e; } return null; }
+
+  function resolveChallenge(){ return (typeof CHALLENGE === 'function') ? CHALLENGE() : CHALLENGE; }
+
+  // ---------- real (generative) brain: ask the Chairman AI for anything the
+  // keyword bot doesn't recognize. Falls back silently if it's unavailable. ----
+  const aiHistory = [];
+  async function askChairmanAI(userText){
+    let thinking = null;
+    try {
+      thinking = el('sys-ln','<span class="dim">the chairman considers…</span>');
+      const c = resolveChallenge();
+      const res = await fetch('/api/chairman', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          message: userText,
+          history: aiHistory.slice(-6),
+          context: { name: writerName || null,
+            challenge: (c && c.title) ? { title:c.title, parameters:c.parameters||'', deadline:c.deadline||null } : null }
+        })
+      });
+      if (thinking){ thinking.remove(); thinking = null; }
+      if (!res.ok) return null;
+      const data = await res.json().catch(()=>null);
+      const reply = data && data.reply ? String(data.reply).trim() : '';
+      if (reply){ aiHistory.push({role:'user',content:userText}, {role:'assistant',content:reply}); return reply; }
+      return null;
+    } catch(e){ if (thinking){ try{ thinking.remove(); }catch(_){} } return null; }
+  }
+
+  async function speak(text, allowEnter){
+    const ns = trySetName(text);
+    if (ns){ if (ns.set){ writerName = ns.set; } await type(ns.reply, {speed:22}); return false; }
+    const e = match(text);
+    if (e && e.id === 'begin'){
+      if (!allowEnter){ await type(pick(notYet), {speed:26}); return false; }
+      for (const l of pickReply(e)) await type(l, {speed:22});
+      await enterApp(); return true;
+    }
+    if (e && e.id === 'thisweek'){
+      const c = resolveChallenge();
+      if (c && c.title){ await type('This week it\'s "' + c.title + '"' + (c.parameters ? ' — ' + c.parameters : '') + (c.deadline ? ' Due ' + c.deadline + '.' : ''), {speed:20}); }
+      else { await type("Nothing's open yet — the gap between challenges. Rest your voice; you'll need it.", {speed:20}); }
+      return false;
+    }
+    if (e && e.id === 'recall'){
+      await type(writerName ? "You're " + writerName + ". Obviously. I don't forget — and you're stalling."
+        : "We were never properly introduced. Tell me your name, or type BEGIN and stop hiding.", {speed:22});
+      return false;
+    }
+    if (e){
+      if (e.id === 'forget'){ writerName = null; }
+      for (const l of pickReply(e)) await type(l, {speed:20});
+      return false;
+    }
+    if (isGibberish(text)){ await type(pick(gibberishLines), {speed:22}); return false; }
+    // hand the unknown question to the real Chairman AI; deflect only if it fails
+    const aiReply = await askChairmanAI(text);
+    if (aiReply){ await type(aiReply, {speed:18}); return false; }
+    await type(deflectWith(suggestNearby(text)), {speed:20});
+    return false;
+  }
+
+  function openBot(){ botMode = true; pending = null; input.disabled = false; input.focus();
+    hint.textContent = 'ask the chairman anything · type BEGIN to enter'; fc.classList.remove('off'); }
+  async function handleBot(text){ lock(); await wait(reduce?60:240); const didEnter = await speak(text, true); if (!didEnter && !entered) openBot(); }
+
+  async function announceChallenge(){
+    const c = resolveChallenge();
+    if (!c || !c.title){
+      await type("No challenge stands open this moment — the quiet before the next constraint. Wander the archive; I'll summon you when it drops.", {speed:22});
+      return;
+    }
+    await wait(160);
+    const banner = el('chair',''); const s = document.createElement('span'); s.className = 'invert';
+    s.textContent = ' ▶ NEW CHALLENGE — NOW OPEN '; banner.appendChild(s); scroll(); Sound.lock();
+    await wait(reduce?200:560);
+    await type('This week: "' + c.title + '".', {who:'the chairman', speed:30, pause:220});
+    if (c.parameters) await type('The terms — ' + c.parameters, {speed:22});
+    if (c.deadline) await type('You have until ' + c.deadline + '. You know how I feel about deadlines.', {speed:24});
+    await type('Make something worth the tape.', {speed:26, pause:120});
+  }
+
+  async function enterApp(){
+    if (entered) return; entered = true; botMode = false;
+    await wait(180);
+    el('sys-ln','<span class="dim">──────────────────────────────</span>');
+    sysline('access <b>granted</b> · opening session log …');
+    Sound.beep(520,0.08); await wait(220); Sound.beep(790,0.1); await wait(360);
+    if (mode === 'intro') await announceChallenge();
+    await type("Now — don't waste it" + (writerName ? ", " + writerName : "") + ".", {who:'the chairman', speed:60, pause:200});
+    await wait(reduce?200:600);
+    host.hidden = true;
+    if (onEnterCb){ const cb = onEnterCb; onEnterCb = null; try{ cb(); }catch(e){} }
+  }
+
+  // ---------- start gate (first keypress unlocks audio) ----------
+  async function gate(){
+    await wait(300);
+    sysline('<span class="dim">session log // secure terminal · node 7</span>');
+    await wait(200);
+    el('chair', '&#9654; press <span style="color:var(--ink-bright)">ENTER</span> to accept transmission');
+    input.disabled = false; input.focus();
+    hint.textContent = 'press Enter · sound on'; fc.classList.remove('off');
+    await new Promise(res=>{ pending = {kind:'gate', resolve:res}; });
+    Sound.resume(); Sound.beep(660, 0.08);
+    await wait(140);
+    out.innerHTML = '';
+  }
+
+  // ---------- public entry point ----------
+  function play(opts){
+    opts = opts || {};
+    mode = opts.mode === 'announce' ? 'announce' : 'intro';
+    writerName = opts.name ? String(opts.name).slice(0,40) : null;
+    CHALLENGE = ('challenge' in opts) ? opts.challenge : null;
+    onEnterCb = opts.onEnter || null;
+    pending = null; botMode = false; entered = false; nearI = 0; deflectI = 0;
+    out.innerHTML = '';
+    input.disabled = true; input.value = ''; hint.textContent = '';
+    fc.classList.add('off');
+    portrait.classList.remove('show'); portrait.setAttribute('aria-hidden','true');
+    badge.textContent = 'uplink'; sig.textContent = 'weak';
+    host.hidden = false;
+    gate().then(()=> mode === 'announce' ? runAnnounce() : runIntro());
+  }
+  window.ChairmanCutscene = { play };
+})();
+</script>
+<!-- ==================== /CHAIRMAN CUTSCENE ==================== -->
+
 <script>
 /* ============ CONFIG — fill these in from your Supabase project ============ */
 const SUPABASE_URL = 'https://pliodozlnafakjzfiryv.supabase.co';
@@ -1083,15 +1766,71 @@ async function boot(user){
   enterApp();
 }
 
-function enterApp(){
+async function enterApp(){
   $('who-name').textContent = currentProfile.display_name;
   $('admin-btn').style.display = currentProfile.is_admin ? 'inline-block' : 'none';
+  // pre-cover on a first-ever login so the cutscene doesn't flash the UI first
+  try{
+    const introKey0 = 'sessionlog.intro.' + (currentUser ? currentUser.id : '');
+    if(localStorage.getItem(introKey0) !== '1'){ const cs0 = document.getElementById('chairman-cutscene'); if(cs0) cs0.hidden = false; }
+  }catch(e){}
   showScreen('app');
-  loadChallenges();
+  await loadChallenges();
   loadGreatestHits();
   loadGeneralPlaylist();
   subscribeGeneralPlaylist();
+  maybePlayCutscene();
 }
+
+/* ---------------- CHAIRMAN CUTSCENE HOOKS ---------------- */
+function currentChallengeForCutscene(){
+  if(!allChallenges || !allChallenges.length) return null;
+  const c = allChallenges[0];   // newest weekly challenge (archive excluded)
+  let deadline = null;
+  if(c.deadline){ try{ deadline = new Date(c.deadline).toLocaleString([], { weekday:'long', hour:'numeric', minute:'2-digit' }); }catch(e){} }
+  return { id: c.id, title: c.title, parameters: c.parameters || '', deadline };
+}
+function playCutscene(mode, onDone){
+  if(!window.ChairmanCutscene){ if(onDone) onDone(); return; }
+  window.ChairmanCutscene.play({
+    mode: mode || 'intro',
+    name: currentProfile ? currentProfile.display_name : null,
+    challenge: () => currentChallengeForCutscene(),
+    onEnter: () => { if(onDone) onDone(); }
+  });
+}
+function maybePlayCutscene(){
+  if(!currentUser) return;
+  const uid = currentUser.id;
+  const introKey = 'sessionlog.intro.' + uid;
+  const chalKey  = 'sessionlog.seenchallenge.' + uid;
+  let introSeen = false, lastChal = null;
+  try{ introSeen = localStorage.getItem(introKey) === '1'; lastChal = localStorage.getItem(chalKey); }catch(e){}
+  const cur = (allChallenges && allChallenges.length) ? allChallenges[0] : null;
+  const curId = cur ? String(cur.id) : null;
+  if(!introSeen){
+    playCutscene('intro', () => { try{ localStorage.setItem(introKey,'1'); if(curId) localStorage.setItem(chalKey, curId); }catch(e){} });
+    return;
+  }
+  if(curId && curId !== lastChal){
+    playCutscene('announce', () => { try{ localStorage.setItem(chalKey, curId); }catch(e){} });
+  }
+}
+// "joshua" — the WarGames backdoor: type it anywhere to summon the Chairman
+(function(){
+  let buf = '';
+  window.addEventListener('keydown', (e) => {
+    const ae = document.activeElement, tag = ae && ae.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || (ae && ae.isContentEditable)) return;
+    if(!e.key || e.key.length !== 1) return;
+    buf = (buf + e.key.toLowerCase()).slice(-6);
+    if(buf === 'joshua'){
+      buf = '';
+      const cs = document.getElementById('chairman-cutscene');
+      if(cs && cs.hidden){ playCutscene('intro', () => {}); }
+    }
+  });
+})();
 
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
