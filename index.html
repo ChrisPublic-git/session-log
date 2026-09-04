@@ -2838,5 +2838,31 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 </script>
+  <script>
+(function () {
+  var CSS = ":host,.crt{height:100dvh;display:flex;flex-direction:column;-webkit-text-size-adjust:100%}"
+    + ".log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-end;gap:.6em;overscroll-behavior:contain}"
+    + ".prompt-row{padding-bottom:calc(10px + env(safe-area-inset-bottom))}"
+    + ".prompt-row input{font-size:16px}"
+    + "@media(max-width:640px){"
+    + ".crt{font-size:clamp(15px,4.2vw,20px);padding-left:14px;padding-right:14px}"
+    + ".log p,.log div{overflow-wrap:anywhere}"
+    + ".portrait{position:static;float:none;width:min(56vw,210px);margin:14px auto 18px;display:block}"
+    + ".portrait .who{position:static;display:block;text-align:center;margin-top:6px;white-space:nowrap}"
+    + "}";
+  var tries = 0;
+  var timer = setInterval(function () {
+    var host = document.getElementById('chairman-cutscene');
+    if (host && host.shadowRoot) {
+      var s = document.createElement('style');
+      s.textContent = CSS;
+      host.shadowRoot.appendChild(s);
+      clearInterval(timer);
+    } else if (++tries > 200) {
+      clearInterval(timer);
+    }
+  }, 100);
+})();
+</script>
 </body>
 </html>
