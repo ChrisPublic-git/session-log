@@ -69,7 +69,18 @@ async function chairman(request, env) {
     reply = reply.replace(/^["'“”]+|["'“”]+$/g, '')
                  .replace(/^(the chairman|chairman)\s*[:\-—]\s*/i, '')
                  .trim();
-    if (reply.length > 700) reply = reply.slice(0, 700);
+    // enforce brevity in code (the model ignores sentence-count instructions):
+    // keep the first 2 COMPLETE sentences — a 3rd only if it's still short —
+    // and drop any dangling fragment the token cap left mid-sentence.
+    const sentences = reply.match(/[^.!?]+[.!?]+(?:["'“”]+)?/g);
+    if (sentences && sentences.length) {
+      let kept = sentences.slice(0, 2).join(' ').replace(/\s+/g, ' ').trim();
+      if (kept.length < 140 && sentences[2]) {
+        kept = (kept + ' ' + sentences[2].trim()).replace(/\s+/g, ' ').trim();
+      }
+      reply = kept;
+    }
+    if (reply.length > 340) reply = reply.slice(0, 340);
     return json({ reply: reply || null });
   } catch (e) {
     return json({ reply: null, error: String((e && e.message) || e) });
