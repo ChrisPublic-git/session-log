@@ -55,7 +55,7 @@ async function chairman(request, env) {
   messages.push({ role: 'user', content: message });
 
   try {
-    const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+       const out = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
       messages, max_tokens: 220, temperature: 0.85
     });
     let reply = out && (out.response != null ? out.response : (out.result != null ? out.result : ''));
