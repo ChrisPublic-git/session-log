@@ -1832,6 +1832,23 @@ function maybePlayCutscene(){
   });
 })();
 
+// Mobile summon: tap the SESSION LOG logo 5 times quickly to call the Chairman
+(function(){
+  const logo = document.getElementById('app-title');
+  if(!logo) return;
+  let taps = 0, timer = null;
+  logo.addEventListener('click', () => {
+    taps++;
+    clearTimeout(timer);
+    timer = setTimeout(() => { taps = 0; }, 1200);
+    if(taps >= 5){
+      taps = 0;
+      const cs = document.getElementById('chairman-cutscene');
+      if(cs && cs.hidden){ playCutscene('intro', () => {}); }
+    }
+  });
+})();
+
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if(session && session.user){
