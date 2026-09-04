@@ -250,11 +250,134 @@
   .take .notes{color:var(--muted);font-size:13px;margin:8px 0 0 48px;line-height:1.5;}
 
   .take-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--hair);margin-left:48px;}
-  .vu{display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--muted);padding:0;}
-  .vu .bars{display:flex;gap:2px;}
-  .vu .bar{width:4px;height:14px;background:var(--hair);border-radius:1px;transition:background .15s;}
-  .vu.voted .bar.fill{background:var(--vu);}
-  .vu .count{font-family:'JetBrains Mono',monospace;font-size:11px;}
+  /* ---------- star ratings (replaced the old vote meter) ---------- */
+  .take-foot{flex-wrap:wrap;gap:10px 14px;}
+  .rate-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .rate-prompt{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-family:'JetBrains Mono',monospace;}
+  .rate-prompt.done{color:var(--ink);}
+  .rate{display:flex;gap:1px;position:relative;}
+  .rate-star{
+    width:30px;height:30px;padding:4px;background:none;border:none;
+    color:var(--muted-dimmer);line-height:0;
+    transition:color .12s linear,transform .12s ease-out;
+  }
+  .rate-star svg{width:100%;height:100%;display:block;}
+  .rate-star .f{opacity:0;transition:opacity .12s linear;}
+  .rate-star.on{color:var(--ink);filter:drop-shadow(0 0 5px rgba(61,255,143,.6));}
+  .rate-star.on .f{opacity:1;}
+  .rate.mine .rate-star.on{color:#c8ffdd;}
+  .rate-star:hover,.rate-star:focus-visible{transform:scale(1.15);outline:none;}
+  .rate-star:focus-visible{color:#c8ffdd;}
+  .rate-star.pop{animation:ratepop .34s ease-out;}
+  @keyframes ratepop{0%{transform:scale(1);}35%{transform:scale(1.5);}100%{transform:scale(1);}}
+  .rate-score{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
+  .rate-score b{font-family:'VT323',monospace;font-size:20px;color:var(--ink);font-weight:400;vertical-align:-2px;}
+  .spark-layer{position:absolute;inset:0;pointer-events:none;overflow:visible;}
+  .spark{
+    position:absolute;left:var(--x);top:50%;width:var(--sz);height:var(--sz);
+    margin:calc(var(--sz)/-2);color:#c8ffdd;
+    filter:drop-shadow(0 0 6px rgba(61,255,143,.9));
+    animation:sparkfly var(--dur) cubic-bezier(.12,.72,.28,1) forwards;
+  }
+  .spark svg{width:100%;height:100%;display:block;}
+  @keyframes sparkfly{
+    0%{transform:translate(0,0) rotate(0deg) scale(.2);opacity:0;}
+    15%{opacity:1;}
+    100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1);opacity:0;}
+  }
+
+  .suggestion .stamp-badge svg{width:15px;height:15px;color:var(--muted);}
+
+  /* ---------- challenge randomizer ---------- */
+  /* NOTE: everything here is rnd- prefixed on purpose. The app already
+     defines .frame and .reel for challenge cards. */
+  .rnd-count{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+  .rnd-machine{display:flex;gap:10px;position:relative;user-select:none;margin-bottom:14px;}
+  .rnd-frame{
+    flex:1;position:relative;border:1px solid var(--ink);background:#000;overflow:hidden;
+    box-shadow:inset 0 0 26px rgba(61,255,143,.14);
+  }
+  .rnd-view{height:186px;overflow:hidden;position:relative;}
+  .rnd-shift,.rnd-reel{will-change:transform;}
+  .rnd-cell{
+    height:62px;display:flex;align-items:center;justify-content:center;text-align:center;
+    font-family:'VT323',monospace;font-size:22px;line-height:1.05;padding:0 34px;
+    color:var(--ink);opacity:.32;
+  }
+  .rnd-cell.spacer{opacity:0;}
+  .rnd-pay{
+    position:absolute;left:0;right:0;top:62px;height:62px;pointer-events:none;
+    border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
+  }
+  .rnd-pay::before,.rnd-pay::after{content:"";position:absolute;top:50%;transform:translateY(-50%);border:7px solid transparent;}
+  .rnd-pay::before{left:5px;border-left-color:var(--ink);}
+  .rnd-pay::after{right:5px;border-right-color:var(--ink);}
+  .rnd-frame.lit .rnd-cell.hit{opacity:1;color:#c8ffdd;text-shadow:0 0 12px rgba(61,255,143,.9);}
+  .rnd-frame::after{
+    content:"";position:absolute;left:0;right:0;top:0;height:34%;opacity:0;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(61,255,143,0),rgba(61,255,143,.5),rgba(200,255,221,.16),rgba(61,255,143,0));
+  }
+  .rnd-frame.glitch::after{animation:rndtear .2s steps(4) forwards;}
+  @keyframes rndtear{
+    0%{opacity:.9;transform:translateY(-40%) scaleY(.4);}
+    50%{opacity:.7;transform:translateY(90%) scaleY(2.2);}
+    100%{opacity:0;transform:translateY(210%) scaleY(.6);}
+  }
+  .rnd-frame.glitch .rnd-shift{animation:rndslice .2s steps(2);}
+  @keyframes rndslice{
+    0%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    20%{transform:translateX(-11px) skewX(-7deg);clip-path:inset(14% 0 46% 0);}
+    45%{transform:translateX(13px) skewX(3deg);clip-path:inset(52% 0 12% 0);}
+    70%{transform:translateX(-5px);clip-path:inset(0 0 70% 0);}
+    100%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+  }
+  .rnd-frame.glitch .rnd-cell{text-shadow:-4px 0 rgba(61,255,143,.75),4px 0 rgba(200,255,221,.3);}
+  .rnd-frame.dropout{opacity:.28;}
+  .rnd-lever{width:30px;position:relative;}
+  .rnd-lever .track{position:absolute;left:13px;top:14px;bottom:14px;width:3px;background:var(--hair);}
+  .rnd-lever .arm{
+    position:absolute;left:6px;top:10px;width:17px;height:17px;border-radius:50%;
+    border:2px solid var(--ink);background:#000;
+    transition:transform .38s cubic-bezier(.2,.8,.3,1);
+  }
+  .rnd-lever.pulled .arm{transform:translateY(120px);}
+  .rnd-result{border:1px solid var(--ink);padding:14px 16px;margin-bottom:22px;}
+  .rnd-result .rnd-kicker{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;}
+  .rnd-result h3{font-family:'VT323',monospace;font-size:26px;margin:4px 0 2px;font-weight:400;}
+  .rnd-result .rnd-by{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .rnd-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .rnd-actions .submit-cta{margin:0;flex:1;}
+
+  /* the reveal every member sees once, when the machine has picked */
+  .rnd-overlay{
+    /* under the scanline/vignette layers (200/201) so the CRT texture
+       still lies over it, but above the player (30) and toast (20) */
+    position:fixed;inset:0;z-index:150;background:rgba(5,10,6,.97);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:22px;gap:20px;
+  }
+  .rnd-overlay.open{display:flex;}
+  .rnd-overlay .rnd-headline{
+    font-family:'VT323',monospace;font-size:40px;line-height:1;text-align:center;color:#c8ffdd;
+    text-shadow:0 0 16px rgba(61,255,143,.8);
+  }
+  .rnd-overlay .rnd-headline.go{animation:rndblink .42s steps(1) 6,rndjitter 1.9s steps(1) 1;}
+  @keyframes rndblink{50%{opacity:.05;}}
+  @keyframes rndjitter{
+    0%,58%,100%{transform:none;}
+    60%{transform:translate(-5px,1px) skewX(-4deg);text-shadow:5px 0 rgba(200,255,221,.5),-5px 0 rgba(61,255,143,.8);}
+    63%{transform:translate(6px,-2px);text-shadow:-6px 0 rgba(200,255,221,.45);}
+    66%{transform:none;}
+    84%{transform:translate(3px,2px) skewX(3deg);}
+    87%{transform:none;}
+  }
+  .rnd-overlay .rnd-machine{width:100%;max-width:520px;}
+  .rnd-overlay .rnd-after{width:100%;max-width:520px;display:none;}
+  .rnd-overlay .rnd-after.show{display:block;}
+  @media (prefers-reduced-motion:reduce){
+    .rnd-frame.glitch::after,.rnd-frame.glitch .rnd-shift,.rnd-overlay .rnd-headline.go,
+    .spark,.rate-star.pop{animation:none !important;}
+  }
   .comment-toggle{background:none;border:none;color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;padding:0;}
   .comment-toggle:hover{color:var(--ink);}
 
@@ -438,24 +561,36 @@
 
 <div id="toast" class="toast"></div>
 
+<!-- shown once per member when the machine has drawn a new challenge.
+     Light DOM is safe here: every class is rnd- prefixed. -->
+<div class="rnd-overlay" id="rnd-overlay">
+  <div class="rnd-headline" id="rnd-headline">Random challenge!</div>
+  <div class="rnd-machine" id="rnd-reveal-machine"></div>
+  <div class="rnd-after" id="rnd-after">
+    <button class="submit-cta" id="rnd-enter" style="width:100%;">See the week &rarr;</button>
+  </div>
+</div>
+
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="auth-wrap" style="display:none;">
   <div class="brand"><span class="dot"></span><h1 id="app-title-auth">SESSION LOG</h1></div>
   <p class="tag" style="margin-top:2px;text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:var(--ink);">Sign in</p>
   <p class="tag" id="auth-subtitle">Invite-only. Enter the email you were invited with to get a sign-in link.</p>
 
-  <div id="auth-form-link">
-    <input class="field" type="email" id="email-input" placeholder="you@email.com" autocomplete="email">
-    <button class="btn" id="send-link-btn">Send sign-in link</button>
-    <button class="btn ghost" id="show-password-btn" style="width:100%;">Have a password? Sign in with it instead</button>
-  </div>
+  <form id="auth-form-link" autocomplete="on">
+    <input class="field" type="email" id="email-input" name="email" placeholder="you@email.com" autocomplete="email">
+    <button class="btn" id="send-link-btn" type="submit">Send sign-in link</button>
+    <button class="btn ghost" id="show-password-btn" type="button" style="width:100%;">Have a password? Sign in with it instead</button>
+  </form>
 
-  <div id="auth-form-password" style="display:none;">
-    <input class="field" type="email" id="password-email-input" placeholder="you@email.com" autocomplete="email">
-    <input class="field" type="password" id="password-input" placeholder="password" autocomplete="current-password">
-    <button class="btn" id="password-signin-btn">Sign in</button>
-    <button class="btn ghost" id="show-link-btn" style="width:100%;">Use a sign-in link instead</button>
-  </div>
+  <!-- kept in the DOM rather than display:none'd at load — password managers
+       scan on load and skip hidden fields, so this stayed invisible to them -->
+  <form id="auth-form-password" autocomplete="on" style="position:absolute;left:-9999px;top:0;opacity:0;pointer-events:none;height:0;overflow:hidden;">
+    <input class="field" type="email" id="password-email-input" name="username" placeholder="you@email.com" autocomplete="username">
+    <input class="field" type="password" id="password-input" name="password" placeholder="password" autocomplete="current-password">
+    <button class="btn" id="password-signin-btn" type="submit">Sign in</button>
+    <button class="btn ghost" id="show-link-btn" type="button" style="width:100%;">Use a sign-in link instead</button>
+  </form>
 
   <div id="auth-note" class="note"></div>
 </div>
@@ -485,7 +620,8 @@
 
     <div class="row-head">
       <h2 id="list-heading">Past reels</h2>
-      <button class="add-link" id="new-challenge-btn">+ New challenge</button>
+      <button class="add-link" id="new-challenge-btn" style="display:none;">+ New challenge</button>
+      <button class="add-link" id="suggest-challenge-btn" style="display:none;">+ Suggest a challenge</button>
     </div>
     <div id="challenge-list"></div>
   </div>
@@ -511,16 +647,15 @@
 
     <div id="suggest-view" style="display:none;">
       <div class="detail-head">
-        <div class="num">VOTING OPEN</div>
+        <div class="num">SUGGESTIONS OPEN</div>
         <h2>Suggest next week's challenge</h2>
-        <p class="params">No challenge posted yet for next week. Drop an idea below or vote up one already there.</p>
+        <p class="params">Everything below goes into the Chairman's machine. He draws one at random — no campaigning, no lobbying. Add as many as you like.</p>
       </div>
       <div id="suggestion-list"></div>
       <div class="comment-form" style="margin-top:14px;">
         <input type="text" id="suggestion-input" placeholder="Suggest a challenge idea...">
         <button id="suggestion-add">&#10148;</button>
       </div>
-      <button class="submit-cta" id="randomize-suggestion-btn" style="margin-top:18px;">&#127922; Randomly pick one</button>
     </div>
   </div>
 
@@ -543,6 +678,21 @@
       <h2>The Chairman's Panel</h2>
       <p class="params">Edit or delete any submission or message across the whole log.</p>
     </div>
+    <div class="row-head"><h2>Next week's challenge</h2></div>
+    <div class="rnd-count" id="rnd-count"></div>
+    <div class="rnd-machine" id="rnd-machine"></div>
+    <button class="submit-cta" id="rnd-spin">&#9654; Randomize</button>
+    <div class="rnd-result" id="rnd-result" style="display:none;">
+      <div class="rnd-kicker">The machine picked</div>
+      <h3 id="rnd-title"></h3>
+      <div class="rnd-by" id="rnd-by"></div>
+      <div class="rnd-actions">
+        <button class="submit-cta" id="rnd-select">Select this challenge</button>
+        <button class="nav-btn" id="rnd-respin">Randomize again</button>
+      </div>
+    </div>
+    <div style="height:26px;"></div>
+
     <div class="row-head"><h2>Upload tracks</h2></div>
     <div class="field-group">
       <label>Challenge</label>
@@ -634,18 +784,26 @@
     <p style="color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 16px;">
       Sign in with your email and this password instead of waiting for a link, next time.
     </p>
-    <div class="field-group">
-      <label>New password</label>
-      <input class="field" type="password" id="new-password-input" placeholder="At least 6 characters" autocomplete="new-password">
-    </div>
-    <div class="field-group">
-      <label>Confirm password</label>
-      <input class="field" type="password" id="confirm-password-input" placeholder="Repeat it" autocomplete="new-password">
-    </div>
-    <div class="modal-actions">
-      <button class="btn secondary" id="password-cancel">Cancel</button>
-      <button class="btn" id="password-save">Save password</button>
-    </div>
+    <form id="password-form" autocomplete="on">
+      <!-- password managers need to know WHICH account is being updated;
+           without a username field they see two new-password boxes and
+           can't offer to save -->
+      <input type="email" id="password-form-username" name="username" autocomplete="username"
+             tabindex="-1" aria-hidden="true"
+             style="position:absolute;left:-9999px;opacity:0;height:0;pointer-events:none;">
+      <div class="field-group">
+        <label for="new-password-input">New password</label>
+        <input class="field" type="password" id="new-password-input" name="new-password" placeholder="At least 6 characters" autocomplete="new-password">
+      </div>
+      <div class="field-group">
+        <label for="confirm-password-input">Confirm password</label>
+        <input class="field" type="password" id="confirm-password-input" name="confirm-password" placeholder="Repeat it" autocomplete="new-password">
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" id="password-cancel" type="button">Cancel</button>
+        <button class="btn" id="password-save" type="submit">Save password</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1362,7 +1520,58 @@
 const SUPABASE_URL = 'https://pliodozlnafakjzfiryv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_hbVWhdNhpGCBBhseXwmmwA_4WkZ01y1';
 const APP_TITLE = 'SESSION LOG';
-const GROUP_SIZE_ESTIMATE = 9; // used to scale the vote meter, tune to your group
+/* ---------------- RATINGS ----------------
+   Each take gets 1-5 stars from each listener. Rows live in `votes`;
+   the old thumbs-style votes were backfilled to stars = 5, and a null
+   still reads as 5 here in case an old browser tab inserts one.
+
+   Plain averages break at this group size — one 5 from one listener
+   would outrank a 4.6 from six. So ranking uses a Bayesian average:
+   every track carries RATING_PRIOR phantom ratings sat at the group's
+   overall mean, and has to earn its way off them. */
+const RATING_PRIOR = 3;
+const RATING_FALLBACK_MEAN = 3.5;   // used only before anything is rated
+const MOTION_OK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* One four-point spark, shared by the ratings and the randomizer. */
+const STAR_PATH = 'M12 0 L14.3 9.7 L24 12 L14.3 14.3 L12 24 L9.7 14.3 L0 12 L9.7 9.7 Z';
+const STAR_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path class="f" fill="currentColor" d="' + STAR_PATH + '"/>' +
+  '<path fill="none" stroke="currentColor" stroke-width="1.4" d="' + STAR_PATH + '"/></svg>';
+const SPARK_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + STAR_PATH + '"/></svg>';
+
+function starsOf(voteRow){ return voteRow && voteRow.stars ? voteRow.stars : 5; }
+
+function rateStats(rows){
+  const n = rows.length;
+  const sum = rows.reduce((a, v) => a + starsOf(v), 0);
+  return { n, sum, avg: n ? sum / n : 0 };
+}
+
+function bayesRank(sum, n, mean){
+  return (sum + RATING_PRIOR * mean) / (n + RATING_PRIOR);
+}
+
+function spark(layer, x, count){
+  if(!MOTION_OK || !layer) return;
+  for(let i = 0; i < (count || 7); i++){
+    const a = -Math.PI / 2 + (Math.random() - .5) * 2.4;
+    const d = 20 + Math.random() * 38;
+    const s = document.createElement('span');
+    s.className = 'spark';
+    s.style.setProperty('--x', x + 'px');
+    s.style.setProperty('--dx', Math.round(Math.cos(a) * d) + 'px');
+    s.style.setProperty('--dy', Math.round(Math.sin(a) * d) + 'px');
+    s.style.setProperty('--rot', Math.round(Math.random() * 400 - 200) + 'deg');
+    s.style.setProperty('--sz', Math.round(6 + Math.random() * 8) + 'px');
+    s.style.setProperty('--dur', Math.round(520 + Math.random() * 380) + 'ms');
+    s.innerHTML = SPARK_SVG;
+    layer.appendChild(s);
+    setTimeout(() => s.remove(), 1000);
+  }
+}
 /* ============================================================================ */
 
 document.getElementById('app-title').textContent = APP_TITLE;
@@ -1568,12 +1777,24 @@ async function loadGreatestHits(){
   const { data: subs } = await sb.from('submissions').select('*').eq('challenge_id', prev.id);
   if(!subs || subs.length === 0) return;
   const subIds = subs.map(s => s.id);
-  const { data: votesData } = await sb.from('votes').select('submission_id').in('submission_id', subIds);
-  const counts = {};
-  (votesData || []).forEach(v => { counts[v.submission_id] = (counts[v.submission_id] || 0) + 1; });
+  const { data: votesData } = await sb.from('votes').select('submission_id, stars').in('submission_id', subIds);
+  const rows = votesData || [];
+  // the week's own mean is what each track gets pulled toward
+  const weekMean = rows.length
+    ? rows.reduce((a, v) => a + starsOf(v), 0) / rows.length
+    : RATING_FALLBACK_MEAN;
+  const tally = {};
+  rows.forEach(v => {
+    if(!tally[v.submission_id]) tally[v.submission_id] = { n: 0, sum: 0 };
+    tally[v.submission_id].n++;
+    tally[v.submission_id].sum += starsOf(v);
+  });
   const ranked = subs
-    .map(s => ({ ...s, voteCount: counts[s.id] || 0 }))
-    .sort((a, b) => b.voteCount - a.voteCount)
+    .map(s => {
+      const t = tally[s.id] || { n: 0, sum: 0 };
+      return { ...s, ratingCount: t.n, ratingAvg: t.n ? t.sum / t.n : 0, score: bayesRank(t.sum, t.n, weekMean) };
+    })
+    .sort((a, b) => b.score - a.score)
     .slice(0, 3);
   if(ranked.length === 0) return;
 
@@ -1663,7 +1884,8 @@ function showScreen(name){
 
 /* ---------------- AUTH ---------------- */
 
-$('send-link-btn').addEventListener('click', async () => {
+$('auth-form-link').addEventListener('submit', async (e) => {
+  e.preventDefault();
   const email = $('email-input').value.trim();
   if(!email){ return; }
   $('send-link-btn').disabled = true;
@@ -1684,20 +1906,28 @@ $('send-link-btn').addEventListener('click', async () => {
   }
 });
 
-$('show-password-btn').addEventListener('click', () => {
-  $('auth-form-link').style.display = 'none';
-  $('auth-form-password').style.display = 'block';
-  $('auth-subtitle').textContent = 'Sign in with your email and password.';
+/* Both auth forms stay in the DOM at all times. Toggling with display:none
+   is what hid the password fields from password managers — they scan once on
+   load. Parking the inactive one offscreen keeps it findable. */
+const AUTH_HIDDEN = 'position:absolute;left:-9999px;top:0;opacity:0;pointer-events:none;height:0;overflow:hidden;';
+function showAuthForm(which){
+  const link = $('auth-form-link'), pw = $('auth-form-password');
+  const on = which === 'password' ? pw : link;
+  const off = which === 'password' ? link : pw;
+  off.setAttribute('style', AUTH_HIDDEN);
+  on.setAttribute('style', '');
+  $('auth-subtitle').textContent = which === 'password'
+    ? 'Sign in with your email and password.'
+    : 'Invite-only. Enter the email you were invited with to get a sign-in link.';
   $('auth-note').textContent = '';
-});
-$('show-link-btn').addEventListener('click', () => {
-  $('auth-form-password').style.display = 'none';
-  $('auth-form-link').style.display = 'block';
-  $('auth-subtitle').textContent = 'Invite-only. Enter the email you were invited with to get a sign-in link.';
-  $('auth-note').textContent = '';
-});
+  const first = on.querySelector('input');
+  if(first) setTimeout(() => first.focus(), 0);
+}
+$('show-password-btn').addEventListener('click', () => showAuthForm('password'));
+$('show-link-btn').addEventListener('click', () => showAuthForm('link'));
 
-$('password-signin-btn').addEventListener('click', async () => {
+$('auth-form-password').addEventListener('submit', async (e) => {
+  e.preventDefault();
   const email = $('password-email-input').value.trim();
   const password = $('password-input').value;
   if(!email || !password){ return; }
@@ -1712,15 +1942,18 @@ $('password-signin-btn').addEventListener('click', async () => {
     noteEl.className = 'note err';
   }
 });
-$('password-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') $('password-signin-btn').click(); });
+/* Enter now submits the form natively — no keydown shim needed. */
 
 $('set-password-btn').addEventListener('click', () => {
   $('new-password-input').value = '';
   $('confirm-password-input').value = '';
+  // tell the password manager which account this password belongs to
+  $('password-form-username').value = (currentUser && currentUser.email) ? currentUser.email : '';
   $('password-modal').classList.add('open');
 });
 $('password-cancel').addEventListener('click', () => $('password-modal').classList.remove('open'));
-$('password-save').addEventListener('click', async () => {
+$('password-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
   const pw = $('new-password-input').value;
   const confirmPw = $('confirm-password-input').value;
   if(pw.length < 6){ toast('Password needs to be at least 6 characters.'); return; }
@@ -1768,7 +2001,7 @@ async function boot(user){
 
 async function enterApp(){
   $('who-name').textContent = currentProfile.display_name;
-  $('admin-btn').style.display = currentProfile.is_admin ? 'inline-block' : 'none';
+  applyRoleVisibility();
   // pre-cover on a first-ever login so the cutscene doesn't flash the UI first
   try{
     const introKey0 = 'sessionlog.intro.' + (currentUser ? currentUser.id : '');
@@ -1799,21 +2032,62 @@ function playCutscene(mode, onDone){
     onEnter: () => { if(onDone) onDone(); }
   });
 }
+/* The reveal: members watch the machine land on what the Chairman already
+   drew. It's a replay, not a live draw — the pick happened in his panel. */
+let revealMachine = null;
+
+async function playRandomReveal(challenge, onDone){
+  const overlay = $('rnd-overlay');
+  if(!overlay || !challenge){ if(onDone) onDone(); return; }
+  if(!revealMachine) revealMachine = makeRandomizer($('rnd-reveal-machine'));
+
+  // spin through the near-misses: everything still suggested, plus past weeks
+  const chosen = { id: challenge.id, text: challenge.title };
+  const pool = [chosen];
+  try{
+    const { data: subs } = await sb.from('suggestions').select('id, text').limit(12);
+    (subs || []).forEach(s => pool.push({ id: s.id, text: s.text }));
+  }catch(e){}
+  (allChallenges || []).slice(1, 8).forEach(c => pool.push({ id: c.id, text: c.title }));
+
+  const head = $('rnd-headline');
+  const after = $('rnd-after');
+  after.classList.remove('show');
+  overlay.classList.add('open');
+  head.classList.remove('go'); void head.offsetWidth; head.classList.add('go');
+
+  setTimeout(() => {
+    revealMachine.spin(pool, chosen, () => after.classList.add('show'));
+  }, MOTION_OK ? 1400 : 200);
+
+  $('rnd-enter').onclick = () => {
+    overlay.classList.remove('open');
+    if(onDone) onDone();
+  };
+}
+
 function maybePlayCutscene(){
   if(!currentUser) return;
   const uid = currentUser.id;
-  const introKey = 'sessionlog.intro.' + uid;
-  const chalKey  = 'sessionlog.seenchallenge.' + uid;
+  const introKey  = 'sessionlog.intro.' + uid;
+  const chalKey   = 'sessionlog.seenchallenge.' + uid;
   let introSeen = false, lastChal = null;
   try{ introSeen = localStorage.getItem(introKey) === '1'; lastChal = localStorage.getItem(chalKey); }catch(e){}
   const cur = (allChallenges && allChallenges.length) ? allChallenges[0] : null;
   const curId = cur ? String(cur.id) : null;
+  const mark = () => { try{ if(curId) localStorage.setItem(chalKey, curId); }catch(e){} };
+
   if(!introSeen){
-    playCutscene('intro', () => { try{ localStorage.setItem(introKey,'1'); if(curId) localStorage.setItem(chalKey, curId); }catch(e){} });
+    // the intro already introduces the week — one ceremony, not two
+    playCutscene('intro', () => { try{ localStorage.setItem(introKey,'1'); }catch(e){} mark(); });
     return;
   }
   if(curId && curId !== lastChal){
-    playCutscene('announce', () => { try{ localStorage.setItem(chalKey, curId); }catch(e){} });
+    if(cur.is_random_pick){
+      playRandomReveal(cur, mark);
+    } else {
+      playCutscene('announce', mark);
+    }
   }
 }
 // "joshua" — the WarGames backdoor: type it anywhere to summon the Chairman
@@ -1934,6 +2208,26 @@ function renderChallengeList(challenges){
   });
 }
 
+/* Only the Chairman posts challenges. Everyone else suggests, and the
+   randomizer in his panel decides. Hiding the button is the courtesy;
+   the row-level security policy on `challenges` is the actual guard. */
+function applyRoleVisibility(){
+  const admin = !!(currentProfile && currentProfile.is_admin);
+  $('admin-btn').style.display = admin ? 'inline-block' : 'none';
+  $('new-challenge-btn').style.display = admin ? 'inline-block' : 'none';
+  $('suggest-challenge-btn').style.display = admin ? 'none' : 'inline-block';
+}
+
+$('suggest-challenge-btn').addEventListener('click', async () => {
+  if(!allChallenges || !allChallenges.length){ await loadChallenges(); }
+  if(allChallenges && allChallenges.length){
+    await openChallenge(allChallenges[0]);
+    showSuggestView();
+  } else {
+    toast('No challenges posted yet — the Chairman goes first.');
+  }
+});
+
 $('new-challenge-btn').addEventListener('click', async () => {
   const { data } = await sb.from('challenges').select('week_number').gt('week_number', 0).order('week_number', { ascending: false }).limit(1);
   const nextWeek = data && data.length ? data[0].week_number + 1 : 1;
@@ -2052,23 +2346,13 @@ const suggestionListEl = $('suggestion-list');
 async function loadSuggestions(){
   const { data: subs, error } = await sb.from('suggestions').select('*').order('created_at', { ascending: true });
   if(error){ toast(error.message); return; }
-  const ids = (subs || []).map(s => s.id);
-  let voteRows = [];
-  if(ids.length){
-    const { data: v } = await sb.from('suggestion_votes').select('*').in('suggestion_id', ids);
-    voteRows = v || [];
-  }
   await getProfiles((subs || []).map(s => s.created_by).filter(Boolean));
-  suggestions = (subs || []).map(s => {
-    const rows = voteRows.filter(v => v.suggestion_id === s.id);
-    return {
-      id: s.id,
-      text: s.text,
-      by: profileCache[s.created_by] ? profileCache[s.created_by].display_name : '...',
-      votes: rows.length,
-      mine: rows.some(v => v.user_id === currentUser.id)
-    };
-  });
+  suggestions = (subs || []).map(s => ({
+    id: s.id,
+    text: s.text,
+    by: profileCache[s.created_by] ? profileCache[s.created_by].display_name : '...',
+    mine: s.created_by === currentUser.id
+  }));
   renderSuggestions();
 }
 
@@ -2077,35 +2361,15 @@ function renderSuggestions(){
     suggestionListEl.innerHTML = '<div class="empty">No suggestions yet. Add the first one.</div>';
     return;
   }
-  const sorted = [...suggestions].sort((a, b) => b.votes - a.votes);
-  suggestionListEl.innerHTML = sorted.map(s => `
+  suggestionListEl.innerHTML = suggestions.map(s => `
     <div class="suggestion" data-id="${s.id}">
-      <button class="stamp-badge ${s.mine ? 'voted' : ''}" data-suggest-vote="${s.id}">${s.votes}</button>
+      <span class="stamp-badge" aria-hidden="true">${SPARK_SVG}</span>
       <div style="flex:1;">
         <div class="s-text">${escapeHtml(s.text)}</div>
-        <div class="s-by">${escapeHtml(s.by)}</div>
+        <div class="s-by">${escapeHtml(s.by)}${s.mine ? ' &mdash; you' : ''}</div>
       </div>
-      <button class="promote-btn" data-suggest-promote="${s.id}">Use this &rarr;</button>
     </div>
   `).join('');
-  suggestionListEl.querySelectorAll('[data-suggest-vote]').forEach(btn => {
-    btn.addEventListener('click', () => toggleSuggestionVote(btn.dataset.suggestVote));
-  });
-  suggestionListEl.querySelectorAll('[data-suggest-promote]').forEach(btn => {
-    btn.addEventListener('click', () => promoteSuggestion(btn.dataset.suggestPromote));
-  });
-}
-
-async function toggleSuggestionVote(suggestionId){
-  const s = suggestions.find(x => x.id === suggestionId);
-  if(!s) return;
-  if(s.mine){
-    const { data: existing } = await sb.from('suggestion_votes').select('id').eq('suggestion_id', suggestionId).eq('user_id', currentUser.id).maybeSingle();
-    if(existing) await sb.from('suggestion_votes').delete().eq('id', existing.id);
-  } else {
-    await sb.from('suggestion_votes').insert({ suggestion_id: suggestionId, user_id: currentUser.id });
-  }
-  loadSuggestions();
 }
 
 $('suggestion-add').addEventListener('click', addSuggestion);
@@ -2120,31 +2384,203 @@ async function addSuggestion(){
   loadSuggestions();
 }
 
-async function promoteSuggestion(suggestionId, viaRandom){
+async function promoteSuggestion(suggestionId, viaRandom, stay){
   const s = suggestions.find(x => x.id === suggestionId);
   if(!s) return;
   const nextWeek = (allChallenges[0] ? allChallenges[0].week_number : 0) + 1;
   const sourceLine = viaRandom
-    ? `Randomly selected from group suggestions \u2014 submitted by ${s.by}.`
+    ? `Drawn at random from group suggestions \u2014 submitted by ${s.by}.`
     : `Promoted from group suggestions \u2014 submitted by ${s.by}.`;
   const { error } = await sb.from('challenges').insert({
     week_number: nextWeek,
     title: s.text,
     parameters: sourceLine,
-    created_by: currentUser.id
+    created_by: currentUser.id,
+    is_random_pick: !!viaRandom      // members get the reveal animation once
   });
   if(error){ toast(error.message); return; }
   await sb.from('suggestions').delete().eq('id', suggestionId);
   toast(`Week ${nextWeek} challenge set: ${s.text}`);
   await loadChallenges();
-  openChallenge(allChallenges[0]);
+  if(!stay) openChallenge(allChallenges[0]);
 }
 
-$('randomize-suggestion-btn').addEventListener('click', () => {
-  if(suggestions.length === 0){ toast('No suggestions to pick from yet.'); return; }
-  const pick = suggestions[Math.floor(Math.random() * suggestions.length)];
-  if(!confirm(`Randomly selected: "${pick.text}"\n\nUse this as next week's challenge?`)) return;
-  promoteSuggestion(pick.id, true);
+/* ---------------- THE RANDOMIZER ----------------
+   One reel, three visible cells, a lit payline. makeRandomizer(host)
+   returns { spin, rest, burst } — used twice: the Chairman's panel and
+   the reveal every member sees once. */
+function makeRandomizer(host){
+  host.innerHTML =
+    '<div class="rnd-frame"><div class="rnd-view"><div class="rnd-shift"><div class="rnd-reel"></div></div></div><div class="rnd-pay"></div></div>' +
+    '<div class="rnd-lever"><div class="track"></div><div class="arm"></div></div>' +
+    '<div class="spark-layer"></div>';
+  const frame = host.querySelector('.rnd-frame');
+  const reel  = host.querySelector('.rnd-reel');
+  const lever = host.querySelector('.rnd-lever');
+  const sparks = host.querySelector('.spark-layer');
+  let busy = false;
+
+  function glitchOnce(dropout){
+    if(!MOTION_OK) return;
+    frame.classList.remove('glitch'); void frame.offsetWidth;
+    frame.classList.add('glitch');
+    if(dropout){ frame.classList.add('dropout'); setTimeout(() => frame.classList.remove('dropout'), 70); }
+    setTimeout(() => frame.classList.remove('glitch'), 210);
+  }
+
+  function burst(n){
+    if(!MOTION_OK) return;
+    const w = host.clientWidth || 300;
+    for(let i = 0; i < (n || 16); i++){
+      const a = Math.random() * Math.PI * 2;
+      const d = 50 + Math.random() * 130;
+      const s = document.createElement('span');
+      s.className = 'spark';
+      s.style.setProperty('--x', Math.round(w / 2) + 'px');
+      s.style.setProperty('--dx', Math.round(Math.cos(a) * d) + 'px');
+      s.style.setProperty('--dy', Math.round(Math.sin(a) * d * .7) + 'px');
+      s.style.setProperty('--rot', Math.round(Math.random() * 600 - 300) + 'deg');
+      s.style.setProperty('--sz', Math.round(9 + Math.random() * 16) + 'px');
+      s.style.setProperty('--dur', Math.round(640 + Math.random() * 560) + 'ms');
+      s.innerHTML = SPARK_SVG;
+      sparks.appendChild(s);
+      setTimeout(() => s.remove(), 1400);
+    }
+  }
+
+  function paint(items){
+    reel.innerHTML = '<div class="rnd-cell spacer"></div>' +
+      items.map(i => '<div class="rnd-cell">' + escapeHtml(i.text) + '</div>').join('');
+  }
+  function cellH(){ return reel.children[1] ? reel.children[1].offsetHeight : 62; }
+  function move(y){ reel.style.transform = 'translateY(' + (-y) + 'px)'; }
+
+  function rest(item){
+    if(!item) return;
+    frame.classList.remove('lit');
+    paint([item, item, item]);
+    move(cellH());
+    reel.children[2].classList.add('hit');
+    frame.classList.add('lit');
+  }
+
+  function spin(pool, chosen, done){
+    if(busy || !pool.length) return;
+    busy = true;
+    frame.classList.remove('lit');
+
+    const strip = [];
+    for(let i = 0; i < 26; i++) strip.push(pool[Math.floor(Math.random() * pool.length)]);
+    const target = strip.length - 3;
+    strip[target] = chosen;
+    if(strip[target - 1] && strip[target - 1].id === chosen.id){
+      strip[target - 1] = pool[(pool.findIndex(p => p.id === chosen.id) + 1) % pool.length];
+    }
+    paint(strip);
+
+    const h = cellH(), dist = target * h;
+    reel.children[target + 1].classList.add('hit');
+
+    function land(){
+      move(dist);
+      reel.style.filter = 'none';
+      frame.classList.add('lit');
+      glitchOnce(true);
+      burst(14);
+      setTimeout(() => burst(8), 190);
+      busy = false;
+      setTimeout(() => { if(done) done(); }, MOTION_OK ? 620 : 60);
+    }
+
+    if(!MOTION_OK){ setTimeout(land, 260); return; }
+
+    lever.classList.add('pulled');
+    setTimeout(() => lever.classList.remove('pulled'), 420);
+    glitchOnce(true);
+
+    const DUR = 3200, t0 = performance.now();
+    const tears = setInterval(() => {
+      const elapsed = performance.now() - t0;
+      if(elapsed > DUR - 260){ clearInterval(tears); return; }
+      if(Math.random() < (elapsed < DUR * 0.5 ? .8 : .3)) glitchOnce(Math.random() < .3);
+    }, 300);
+
+    (function step(now){
+      const t = Math.min(1, (now - t0) / DUR);
+      const p = 1 - Math.pow(1 - t, 5);                 // long mechanical tail
+      const y = dist * p;
+      move(y);
+      const v = dist * 5 * Math.pow(1 - t, 4) / DUR;    // px per ms
+      reel.style.filter = v > 0.05 ? 'blur(' + Math.min(16, v * 2.6).toFixed(2) + 'px)' : 'none';
+      if(t < 1){ requestAnimationFrame(step); }
+      else {
+        reel.style.filter = 'none';
+        reel.style.transition = 'transform .1s ease-out';
+        move(dist + 7);                                  // overshoot, then seat it
+        setTimeout(() => {
+          reel.style.transition = 'transform .16s ease-in';
+          move(dist);
+          setTimeout(() => { reel.style.transition = ''; land(); }, 170);
+        }, 110);
+      }
+    })(performance.now());
+  }
+
+  return { spin, rest, burst, glitchOnce };
+}
+
+/* ---- Chairman's panel ---- */
+let adminMachine = null;
+let randomPick = null;
+
+async function initRandomizer(){
+  if(!adminMachine) adminMachine = makeRandomizer($('rnd-machine'));
+  await loadSuggestions();
+  $('rnd-count').textContent = suggestions.length
+    ? suggestions.length + ' suggestion' + (suggestions.length === 1 ? '' : 's') + ' in the pool'
+    : 'Nothing suggested yet — the machine needs something to draw from.';
+  $('rnd-spin').disabled = suggestions.length === 0;
+  $('rnd-result').style.display = 'none';
+  randomPick = null;
+  adminMachine.rest(suggestions[0] || { id: 'empty', text: '\u2014 nothing to draw \u2014' });
+}
+
+function spinRandomizer(){
+  if(!suggestions.length) return;
+  $('rnd-result').style.display = 'none';
+  $('rnd-spin').disabled = true;
+  randomPick = suggestions[Math.floor(Math.random() * suggestions.length)];
+  adminMachine.spin(suggestions, randomPick, () => {
+    $('rnd-title').textContent = randomPick.text;
+    $('rnd-by').textContent = 'suggested by ' + randomPick.by;
+    $('rnd-result').style.display = 'block';
+    $('rnd-spin').disabled = false;
+  });
+}
+
+$('rnd-spin').addEventListener('click', spinRandomizer);
+$('rnd-respin').addEventListener('click', spinRandomizer);
+
+$('rnd-select').addEventListener('click', () => {
+  if(!randomPick) return;
+  const chosen = randomPick;
+  randomPick = null;
+  adminMachine.burst(26);
+  adminMachine.glitchOnce(true);
+  setTimeout(() => adminMachine.burst(14), 220);
+  $('rnd-select').disabled = $('rnd-respin').disabled = true;
+  // let the sparks land before the panel resets
+  setTimeout(async () => {
+    $('rnd-select').disabled = $('rnd-respin').disabled = false;
+    $('rnd-result').style.display = 'none';
+    await promoteSuggestion(chosen.id, true, true);
+    // he just watched the draw — don't show him the reveal on next login
+    try{
+      const fresh = (allChallenges && allChallenges.length) ? allChallenges[0] : null;
+      if(fresh) localStorage.setItem('sessionlog.seenchallenge.' + currentUser.id, String(fresh.id));
+    }catch(e){}
+    initRandomizer();
+  }, MOTION_OK ? 1000 : 60);
 });
 
 let profileCache = {};
@@ -2173,6 +2609,7 @@ $('admin-back-btn').addEventListener('click', () => {
 
 async function loadAdminData(){
   populateAdminUploadWeekSelect();
+  initRandomizer();
   const [{ data: subs }, { data: comm }] = await Promise.all([
     sb.from('submissions').select('*, challenges(week_number, title)').order('created_at', { ascending: false }),
     sb.from('comments').select('*, submissions(title)').order('created_at', { ascending: false })
@@ -2281,7 +2718,7 @@ function renderAdminMembers(members){
       toast(currentlyAdmin ? `${label} is no longer Chairman.` : `${label} is now Chairman.`);
       if(id === currentUser.id){
         currentProfile.is_admin = !currentlyAdmin;
-        $('admin-btn').style.display = currentProfile.is_admin ? 'inline-block' : 'none';
+        applyRoleVisibility();
         if(!currentProfile.is_admin){
           $('admin-view').style.display = 'none';
           $('list-view').style.display = 'block';
@@ -2609,7 +3046,8 @@ function renderSubmissions(subs, votes, comments, reactions){
     const subVotes = votes.filter(v => v.submission_id === s.id);
     const myVote = subVotes.find(v => v.user_id === currentUser.id);
     const subComments = comments.filter(c => c.submission_id === s.id);
-    const filled = Math.min(5, Math.round((subVotes.length / GROUP_SIZE_ESTIMATE) * 5));
+    const myStars = myVote ? starsOf(myVote) : 0;
+    const stats = rateStats(subVotes);
     const audioUrl = sb.storage.from('submissions').getPublicUrl(s.audio_path).data.publicUrl;
     const submittedAt = formatSubmittedTime(s.created_at);
     const isLate = currentChallenge.deadline && new Date(s.created_at) > new Date(currentChallenge.deadline);
@@ -2658,10 +3096,14 @@ function renderSubmissions(subs, votes, comments, reactions){
         <div class="take-by">${escapeHtml(displayName)} &middot; ${submittedAt}${isLate ? ' <span class="late-tag">Submitted late</span>' : ''}</div>
         ${s.notes ? `<p class="notes">${escapeHtml(s.notes)}</p>` : ''}
         <div class="take-foot">
-          <button class="vu ${myVote ? 'voted' : ''}" data-vote="${s.id}">
-            <span class="bars">${[0,1,2,3,4].map(i => `<span class="bar${i < filled ? ' fill' : ''}"></span>`).join('')}</span>
-            <span class="count">${subVotes.length}</span>
-          </button>
+          <div class="rate-wrap">
+            <span class="rate-prompt${myStars ? ' done' : ''}">${myStars ? 'You gave it ' + myStars : 'What did you think?'}</span>
+            <div class="rate${myStars ? ' mine' : ''}" role="radiogroup" aria-label="Rate ${escapeHtml(s.title)}">
+              ${[1,2,3,4,5].map(v => `<button type="button" class="rate-star${v <= myStars ? ' on' : ''}" role="radio" aria-checked="${v === myStars}" aria-label="${v} star${v > 1 ? 's' : ''}" data-rate="${s.id}" data-stars="${v}">${STAR_SVG}</button>`).join('')}
+              <div class="spark-layer"></div>
+            </div>
+            <span class="rate-score">${stats.n ? `<b>${stats.avg.toFixed(1)}</b> from ${stats.n}` : 'no ratings yet'}</span>
+          </div>
           <button class="comment-toggle" data-toggle="${s.id}">${subComments.length} notes</button>
         </div>
         <div class="comments ${openComments.has(s.id) ? 'open' : ''}" data-sub="${s.id}">
@@ -2685,8 +3127,17 @@ function renderSubmissions(subs, votes, comments, reactions){
   }).join('');
 
   // wire up per-take interactions
-  el.querySelectorAll('[data-vote]').forEach(btn => {
-    btn.addEventListener('click', () => toggleVote(btn.dataset.vote));
+  el.querySelectorAll('[data-rate]').forEach(btn => {
+    btn.addEventListener('click', () => setRating(btn.dataset.rate, parseInt(btn.dataset.stars, 10), btn));
+    // arrows walk the row, like any radiogroup
+    btn.addEventListener('keydown', (e) => {
+      const dir = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+      if(!dir) return;
+      e.preventDefault();
+      const next = Math.min(5, Math.max(1, parseInt(btn.dataset.stars, 10) + dir));
+      const sibling = btn.parentNode.querySelector(`.rate-star[data-stars="${next}"]`);
+      if(sibling) sibling.focus();
+    });
   });
   el.querySelectorAll('[data-toggle]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2717,14 +3168,38 @@ function renderSubmissions(subs, votes, comments, reactions){
   updateRecIndicators();
 }
 
-async function toggleVote(submissionId){
-  const { data: existing } = await sb.from('votes').select('id').eq('submission_id', submissionId).eq('user_id', currentUser.id).maybeSingle();
-  if(existing){
-    await sb.from('votes').delete().eq('id', existing.id);
-  } else {
-    await sb.from('votes').insert({ submission_id: submissionId, user_id: currentUser.id });
+async function setRating(submissionId, stars, btn){
+  const group = btn ? btn.parentNode : null;
+
+  // light up straight away — the round trip and re-render come after
+  if(group){
+    const all = Array.from(group.querySelectorAll('.rate-star'));
+    const already = btn.classList.contains('on') && !group.querySelector(`.rate-star[data-stars="${stars + 1}"].on`);
+    const target = already ? 0 : stars;
+    all.forEach((el, i) => {
+      setTimeout(() => {
+        el.classList.toggle('on', i < target);
+        if(i < target){
+          el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+        }
+        if(i === target - 1) spark(group.querySelector('.spark-layer'), el.offsetLeft + el.offsetWidth / 2);
+      }, MOTION_OK ? i * 55 : 0);
+    });
+    group.classList.toggle('mine', target > 0);
   }
-  loadSubmissions();
+
+  const { data: existing } = await sb.from('votes')
+    .select('id, stars').eq('submission_id', submissionId).eq('user_id', currentUser.id).maybeSingle();
+
+  if(existing && starsOf(existing) === stars){
+    await sb.from('votes').delete().eq('id', existing.id);          // re-tapping clears it
+  } else if(existing){
+    await sb.from('votes').update({ stars }).eq('id', existing.id);
+  } else {
+    const { error } = await sb.from('votes').insert({ submission_id: submissionId, user_id: currentUser.id, stars });
+    if(error){ toast(error.message); }
+  }
+  setTimeout(loadSubmissions, MOTION_OK ? 380 : 0);
 }
 
 async function sendComment(submissionId, el){
