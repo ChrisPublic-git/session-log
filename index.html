@@ -2840,15 +2840,25 @@ function escapeHtml(str){
 </script>
   <script>
 (function () {
-  var CSS = ":host,.crt{height:100dvh;display:flex;flex-direction:column;-webkit-text-size-adjust:100%}"
-    + ".log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-end;gap:.6em;overscroll-behavior:contain}"
-    + ".prompt-row{padding-bottom:calc(10px + env(safe-area-inset-bottom))}"
-    + ".prompt-row input{font-size:16px}"
-    + "@media(max-width:640px){"
-    + ".crt{font-size:clamp(15px,4.2vw,20px);padding-left:14px;padding-right:14px}"
-    + ".log p,.log div{overflow-wrap:anywhere}"
-    + ".portrait{position:static;float:none;width:min(56vw,210px);margin:14px auto 18px;display:block}"
-    + ".portrait .who{position:static;display:block;text-align:center;margin-top:6px;white-space:nowrap}"
+  var CSS = "@media (max-width:640px){"
+    + ":host{font-size:15px}"
+    + ".crt{padding:12px 14px calc(10px + env(safe-area-inset-bottom))}"
+    + ".head{gap:8px;padding-bottom:6px;margin-bottom:8px}"
+    + ".head .sys{font-size:1.35rem}"
+    + ".head .meta{font-size:.7rem}"
+    + ".head .sndbtn{font-size:.66rem;padding:2px 7px}"
+    + ".head .badge{margin-left:0;font-size:.66rem}"
+    + ".stage{flex-direction:column;gap:10px}"
+    + ".screen{min-height:0}"
+    + ".portrait{position:static;order:-1;align-self:center;width:132px;flex:0 0 auto;display:none}"
+    + ".portrait.show{display:flex}"
+    + ".plabel{font-size:.62rem;letter-spacing:2px}"
+    + ".psig{display:none}"
+    + "#out{padding-right:4px}"
+    + ".ln{margin-bottom:.45em}"
+    + ".inputrow{padding-top:10px;margin-top:6px}"
+    + "#in{font-size:16px}"
+    + ".hint{display:none}"
     + "}";
   var tries = 0;
   var timer = setInterval(function () {
