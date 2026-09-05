@@ -719,6 +719,11 @@
     </div>
     <button class="submit-cta" id="admin-upload-btn" style="margin-bottom:26px;">+ Upload to selected challenge</button>
 
+    <div class="row-head"><h2>Analyze library</h2></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Scans every submission with no BPM/key yet, analyzes the audio, and fills in the tag. Safe to run repeatedly — it skips ones already done. The Chairman does not comment on backfilled tracks.</div>
+    <button class="submit-cta" id="admin-backfill-btn" style="margin-bottom:6px;">&#9654; Analyze untagged tracks</button>
+    <div id="admin-backfill-status" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--ink-dim);margin-bottom:26px;min-height:14px;"></div>
+
     <div class="row-head"><h2>All submissions</h2></div>
     <div id="admin-submissions"></div>
     <div class="row-head" style="margin-top:26px;"><h2>All messages</h2></div>
@@ -2774,6 +2779,55 @@ $('admin-upload-btn').addEventListener('click', async () => {
   $('admin-upload-title').value = '';
   $('admin-upload-credited').value = '';
   loadAdminData();
+});
+
+// ---- Backfill: analyze existing tracks that have no BPM/key yet ----
+$('admin-backfill-btn').addEventListener('click', async () => {
+  const btn = $('admin-backfill-btn');
+  const statusEl = $('admin-backfill-status');
+  btn.disabled = true;
+  statusEl.textContent = 'Reading the ledger...';
+
+  const { data: subs, error } = await sb
+    .from('submissions')
+    .select('id, title, audio_path, bpm, musical_key')
+    .order('created_at', { ascending: true });
+  if(error){ statusEl.textContent = 'Error: ' + error.message; btn.disabled = false; return; }
+
+  const todo = (subs || []).filter(s => s.bpm == null && s.musical_key == null && s.audio_path);
+  if(todo.length === 0){ statusEl.textContent = 'Nothing to do — every track is already analyzed.'; btn.disabled = false; return; }
+
+  let done = 0, failed = 0;
+  for(let i = 0; i < todo.length; i++){
+    const s = todo[i];
+    statusEl.textContent = `Analyzing ${i + 1} / ${todo.length}: ${s.title || 'untitled'}...`;
+    try {
+      const url = sb.storage.from('submissions').getPublicUrl(s.audio_path).data.publicUrl;
+      const resp = await fetch(url);
+      if(!resp.ok) throw new Error('download ' + resp.status);
+      const ab = await resp.arrayBuffer();
+      const a = await slAnalyzeAudio(ab);
+      if(a && (a.bpm != null || a.musical_key != null)){
+        const { error: upErr } = await sb.from('submissions').update({
+          bpm: a.bpm != null ? a.bpm : null,
+          musical_key: a.musical_key != null ? a.musical_key : null,
+          key_confidence: a.key_confidence != null ? a.key_confidence : null,
+          loudness: a.loudness != null ? a.loudness : null
+        }).eq('id', s.id);
+        if(upErr) throw new Error(upErr.message);
+        done++;
+      } else {
+        failed++; // decode produced nothing usable
+      }
+    } catch(e){
+      failed++;
+    }
+    await new Promise(r => setTimeout(r, 120)); // gentle pacing
+  }
+
+  statusEl.textContent = `Done. Analyzed ${done}${failed ? `, ${failed} could not be read` : ''}.`;
+  btn.disabled = false;
+  loadSubmissions();
 });
 
 async function loadAdminMembers(){
