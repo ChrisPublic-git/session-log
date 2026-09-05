@@ -8,3 +8,7 @@ binding = "ASSETS"
 
 [ai]
 binding = "AI"
+
+[vars]
+SUPABASE_URL = "https://pliodozlnafakjzfiryv.supabase.co"
+CHAIRMAN_UID = "PASTE-THE-CHAIRMAN-UID-HERE"
