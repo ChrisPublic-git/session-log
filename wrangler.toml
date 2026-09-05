@@ -11,4 +11,4 @@ binding = "AI"
 
 [vars]
 SUPABASE_URL = "https://pliodozlnafakjzfiryv.supabase.co"
-CHAIRMAN_UID = "PASTE-THE-CHAIRMAN-UID-HERE"
+CHAIRMAN_UID = "ca0ca258-e3a8-421b-8a26-77d9f2580c93"
