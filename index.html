@@ -606,26 +606,156 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- NIGHT DRIVER ARCADE MODAL -->
-<div class="arcade-modal" id="arcade-modal">
-  <div class="arcade-box">
-    <h3>Night Driver // Terminal Unit 76</h3>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Use LEFT / RIGHT arrows to steer down the phosphor highway. Avoid the road posts.</div>
-    <div class="arcade-canvas-wrap">
-      <canvas id="night-driver" width="440" height="220"></canvas>
-    </div>
-    <div id="arcade-score" style="font-family:'VT323',monospace;font-size:20px;color:var(--ink);">SCORE: 0</div>
-    <div class="arcade-controls">ESC to exit · Arrow keys to steer</div>
-  </div>
-</div>
+/* EASTER EGG 2: NIGHT DRIVER ARCADE (Hold mini player visualizer for 2.5s) */
+(function(){
+  let pressTimer = null;
+  const viz = $('mini-bars');
+  if(!viz) return;
 
-<div class="rnd-overlay" id="rnd-overlay">
-  <div class="rnd-headline" id="rnd-headline">Random challenge!</div>
-  <div class="rnd-machine" id="rnd-reveal-machine"></div>
-  <div class="rnd-after" id="rnd-after">
-    <button class="submit-cta" id="rnd-enter" style="width:100%;">See the week &rarr;</button>
-  </div>
-</div>
+  viz.addEventListener('pointerdown', () => {
+    pressTimer = setTimeout(() => launchNightDriver(), 2500);
+  });
+  viz.addEventListener('pointerup', () => clearTimeout(pressTimer));
+  viz.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+
+  let gameRunning = false, carX = 220, score = 0, roadPos = 0, speed = 6, animId = null;
+  let obstacles = [];
+  const canvas = $('night-driver');
+  const ctx = canvas ? canvas.getContext('2d') : null;
+  const modal = $('arcade-modal');
+
+  // Track key states for smooth analog-style steering
+  const keys = {};
+
+  function launchNightDriver(){
+    if(!modal || !ctx) return;
+    modal.classList.add('open');
+    gameRunning = true;
+    score = 0; carX = 220; roadPos = 0; speed = 6;
+    obstacles = [];
+    
+    // Spawn initial obstacles down the road
+    for(let i = 0; i < 4; i++){
+      obstacles.push({
+        z: 200 + i * 120,
+        offset: (Math.random() - 0.5) * 160 // randomized left/right lane offset
+      });
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    loop();
+  }
+
+  function onKeyDown(e){
+    if(!gameRunning) return;
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      e.preventDefault();
+      keys[e.key] = true;
+    }
+    if(e.key === 'Escape') closeArcade();
+  }
+
+  function onKeyUp(e){
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      keys[e.key] = false;
+    }
+  }
+
+  function closeArcade(){
+    gameRunning = false;
+    cancelAnimationFrame(animId);
+    modal.classList.remove('open');
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+  }
+
+  modal.addEventListener('click', (e) => { if(e.target === modal) closeArcade(); });
+
+  function loop(){
+    if(!gameRunning) return;
+
+    // Smooth steering calculation
+    if(keys['ArrowLeft']) carX = Math.max(90, carX - 6);
+    if(keys['ArrowRight']) carX = Math.min(350, carX + 6);
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 440, 220);
+
+    roadPos += speed;
+    score += 1;
+    $('arcade-score').textContent = 'SCORE: ' + score;
+
+    // --- 1. DRAW SCROLLING ROAD POSTS ---
+    for(let i = 0; i < 12; i++){
+      let z = (i * 35 - (roadPos % 35));
+      if(z <= 0) z += 420; // loop distance
+      
+      let scale = 180 / z; // perspective scale
+      let screenXLeft = 220 - (70 * scale);
+      let screenXRight = 220 + (70 * scale);
+      let screenY = 110 + (z * 0.35);
+
+      if(screenY < 220 && screenY > 110){
+        ctx.fillStyle = '#3dff8f';
+        // Left & Right phosphor guide posts
+        ctx.fillRect(screenXLeft, screenY, Math.max(2, 4 * scale), Math.max(2, 4 * scale));
+        ctx.fillRect(screenXRight, screenY, Math.max(2, 4 * scale), Math.max(2, 4 * scale));
+      }
+    }
+
+    // --- 2. UPDATE & DRAW OBSTACLES (HAZARD BLOCKS) ---
+    for(let obs of obstacles){
+      obs.z -= speed;
+      if(obs.z < 10){
+        obs.z = 450; // respawn ahead
+        obs.offset = (Math.random() - 0.5) * 180;
+      }
+
+      let scale = 180 / obs.z;
+      let obsScreenX = 220 + (obs.offset * scale);
+      let obsScreenY = 110 + (obs.z * 0.35);
+      let obsWidth = 35 * scale;
+      let obsHeight = 20 * scale;
+
+      if(obsScreenY < 220 && obsScreenY > 110){
+        ctx.fillStyle = '#ff5252'; // warning red obstacle
+        ctx.fillRect(obsScreenX - obsWidth / 2, obsScreenY - obsHeight, obsWidth, obsHeight);
+
+        // Collision check when obstacle is close to the player hood
+        if(obs.z > 20 && obs.z < 55){
+          let playerScreenX = carX;
+          if(Math.abs(obsScreenX - playerScreenX) < (obsWidth / 2 + 15)){
+            // Crash penalty!
+            score = Math.max(0, score - 100);
+            obs.z = 450; // clear obstacle
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, 440, 220); // flash white on impact
+          }
+        }
+      }
+    }
+
+    // --- 3. DRAW PLAYER CAR HOOD & DASHBOARD ---
+    ctx.fillStyle = '#041007';
+    ctx.beginPath();
+    ctx.moveTo(carX - 45, 220);
+    ctx.lineTo(carX - 20, 165);
+    ctx.lineTo(carX + 20, 165);
+    ctx.lineTo(carX + 45, 220);
+    ctx.fill();
+
+    // Windshield reflection line
+    ctx.strokeStyle = '#3dff8f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(carX - 18, 168);
+    ctx.lineTo(carX + 18, 168);
+    ctx.stroke();
+
+    animId = requestAnimationFrame(loop);
+  }
+})();
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="auth-wrap" style="display:none;">
