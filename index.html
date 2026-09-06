@@ -1822,8 +1822,14 @@ document.addEventListener('click', async (e) => {
 
   function handleKey(e){
     if(!gameRunning) return;
-    if(e.key === 'ArrowLeft') carX = Math.max(100, carX - 18);
-    if(e.key === 'ArrowRight') carX = Math.min(340, carX + 18);
+    if(e.key === 'ArrowLeft'){
+      e.preventDefault();
+      carX = Math.max(100, carX - 22);
+    }
+    if(e.key === 'ArrowRight'){
+      e.preventDefault();
+      carX = Math.min(340, carX + 22);
+    }
     if(e.key === 'Escape'){
       closeArcade();
     }
@@ -1843,32 +1849,33 @@ document.addEventListener('click', async (e) => {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, 440, 220);
 
-    roadPos += 4;
+    roadPos += 5;
     score += 1;
     $('arcade-score').textContent = 'SCORE: ' + score;
 
-    ctx.fillStyle = '#3dff8f';
-    for(let i = 0; i < 8; i++){
-      let y = (i * 30 + roadPos) % 220;
+    for(let i = 0; i < 10; i++){
+      let y = (i * 24 + (roadPos % 24)) % 220;
       let widthFactor = y / 220;
-      let leftX = 180 - (y * 0.5);
-      let rightX = 260 + (y * 0.5);
+      let leftX = 170 - (y * 0.45);
+      let rightX = 270 + (y * 0.45);
       
-      ctx.fillRect(leftX, y, 6 + widthFactor * 6, 3);
-      ctx.fillRect(rightX, y, 6 + widthFactor * 6, 3);
+      ctx.fillStyle = '#3dff8f';
+      ctx.fillRect(leftX, y, 4 + widthFactor * 5, 2);
+      ctx.fillRect(rightX, y, 4 + widthFactor * 5, 2);
 
-      if(y > 170 && y < 200){
-        if(carX < leftX + 15 || carX > rightX - 15){
+      if(y > 160 && y < 190){
+        if(carX - 20 < leftX + 10 || carX + 20 > rightX - 10){
           ctx.fillStyle = '#ff5252';
-          score = Math.max(0, score - 50);
+          ctx.fillRect(carX - 25, 175, 50, 20);
+          score = Math.max(0, score - 20);
         }
       }
     }
 
-    ctx.fillStyle = '#0c1a0c';
-    ctx.fillRect(carX - 25, 180, 50, 40);
+    ctx.fillStyle = '#051208';
+    ctx.fillRect(carX - 30, 180, 60, 40);
     ctx.fillStyle = '#3dff8f';
-    ctx.fillRect(carX - 20, 185, 40, 5);
+    ctx.fillRect(carX - 25, 184, 50, 4);
 
     animId = requestAnimationFrame(loop);
   }
