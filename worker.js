@@ -33,7 +33,7 @@ async function fetchAndTranscribe(env, audioPath) {
     const headRes = await fetch(publicUrl, { method: 'HEAD' });
     if (!headRes.ok) return null;
 
-    // Grab up to ~750KB from the start of the file for a free sample
+    // Sample up to ~750KB from the start of the audio
     const rangeRes = await fetch(publicUrl, {
       headers: { 'Range': 'bytes=0-768000' }
     });
@@ -350,7 +350,7 @@ async function musePrompt(env, body) {
     + '. Hand them ONE vivid way in — a constraint, an image, or a dare they can start on in the next five minutes. '
     + 'End on something that makes them want to open the DAW.';
   try { return json({ reply: (await runModel(env, [{ role: 'system', content: p.buildSystem(ctx) }, { role: 'user', content: userMsg }], { max_tokens: p.maxTokens, temperature: p.temperature })) || null, who: 'muse' }); }
-  catch (e) { return json({ reply: null, who: 'muse', error: String((e && e.message) || e) }); }
+  catch (e) { return json({ reply: null, who, error: String((e && e.message) || e) }); }
 }
 
 // ============================================================================
