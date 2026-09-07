@@ -14,6 +14,433 @@
             --accent: #58a6ff;
             --rec: #ff7b72;
             --green: #238636;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--text);
+        }
+
+        button {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background-color: var(--border);
+        }
+
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Audio Player & Mini Visualizer */
+        .player-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mini-visualizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 24px;
+            width: 50px;
+            cursor: pointer;
+        }
+
+        .mini-visualizer span {
+            width: 6px;
+            background: var(--accent);
+            height: 10px;
+            transition: height 0.1s;
+        }
+
+        /* Submissions List */
+        .submission-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .submission-item:last-child {
+            border-bottom: none;
+        }
+
+        .late-tag {
+            background-color: rgba(255, 123, 114, 0.15);
+            color: var(--rec);
+            border: 1px solid var(--rec);
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        /* Fullscreen Arcade Easter Egg Modal */
+        #arcade-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #05050a;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #arcade-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .arcade-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            z-index: 10000;
+        }
+        
+        .arcade-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Session Log</h1>
+            <button id="new-challenge-btn">+ New Challenge</button>
+        </header>
+
+        <!-- Player Bar with Easter Egg Trigger -->
+        <div class="player-bar">
+            <!-- Long press (2.5s) on this mini-visualizer launches Tunnel Rider -->
+            <div class="mini-visualizer" id="easter-egg-trigger" title="Hold to launch arcade">
+                <span></span><span></span><span></span><span></span>
+            </div>
+            <div>
+                <div style="font-weight: 600;">Current Track Player</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Nothing playing yet</div>
+            </div>
+        </div>
+
+        <!-- Submissions Card -->
+        <div class="card">
+            <h3>Recent Submissions</h3>
+            <div id="submissions-list">
+                <!-- Sample dynamic list item demonstrating the LATE tag implementation -->
+                <div class="submission-item">
+                    <div>
+                        <strong>Falling's Never Easy</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by Chris</span>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">2026-09-06 23:55:00</span>
+                        <span class="late-tag">LATE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Arcade Modal -->
+    <div id="arcade-modal">
+        <button class="arcade-close" onclick="closeArcadeGame()">Quit Game</button>
+        <canvas id="arcade-canvas"></canvas>
+    </div>
+
+    <script>
+        // --- EASTER EGG TRIGGER LOGIC ---
+        const trigger = document.getElementById('easter-egg-trigger');
+        let pressTimer;
+
+        trigger.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                startArcadeGame();
+            }, 2500); // 2.5 second long press
+        });
+
+        trigger.addEventListener('mouseup', () => clearTimeout(pressTimer));
+        trigger.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+        
+        // Touch events for mobile support
+        trigger.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                startArcadeGame();
+            }, 2500);
+        });
+        trigger.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+        // --- UPGRADED TUNNEL RIDER ARCADE GAME ---
+        const canvas = document.getElementById('arcade-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameRunning = false;
+        let score = 0;
+        let ship = { x: 0, y: 0, targetX: 0, targetY: 0, bank: 0 };
+        let rings = [];
+        let markers = [];
+        let speed = 4;
+        let distanceTraveled = 0;
+
+        function resizeArcadeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeArcadeCanvas);
+
+        function startArcadeGame() {
+            resizeArcadeCanvas();
+            gameRunning = true;
+            score = 0;
+            distanceTraveled = 0;
+            speed = 5;
+            rings = [];
+            markers = [];
+            
+            ship.x = canvas.width / 2;
+            ship.y = canvas.height / 2;
+            ship.targetX = ship.x;
+            ship.targetY = ship.y;
+
+            // Initialize continuous wormhole rings
+            for (let i = 0; i < 60; i++) {
+                rings.push({
+                    z: i * 40,
+                    radius: 350
+                });
+            }
+
+            // Initialize spaced-out gate markers
+            for (let i = 1; i <= 10; i++) {
+                markers.push({
+                    z: i * 400,
+                    angle: Math.random() * Math.PI * 2,
+                    passed: false
+                });
+            }
+
+            document.getElementById('arcade-modal').style.display = 'flex';
+            requestAnimationFrame(updateArcadeGame);
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!gameRunning) return;
+            ship.targetX = e.clientX;
+            ship.targetY = e.clientY;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!gameRunning) return;
+            ship.targetX = e.touches[0].clientX;
+            ship.targetY = e.touches[0].clientY;
+        }, { passive: true });
+
+        function updateArcadeGame() {
+            if (!gameRunning) return;
+
+            let dx = ship.targetX - ship.x;
+            ship.x += dx * 0.1;
+            let dy = ship.targetY - ship.y;
+            ship.y += dy * 0.1;
+            ship.bank = dx * 0.05;
+
+            ctx.fillStyle = '#05050a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            distanceTraveled += speed;
+
+            // 1. Render Connected Wormhole Tunnel Mesh
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < rings.length; i++) {
+                let ring = rings[i];
+                ring.z -= speed;
+
+                if (ring.z <= 0) {
+                    ring.z = rings.length * 40;
+                }
+
+                let scale = 300 / (ring.z + 1);
+                let rx = centerX + (ship.x - centerX) * (ring.z * 0.001);
+                let ry = centerY + (ship.y - centerY) * (ring.z * 0.001);
+                let rRad = ring.radius * scale;
+
+                ctx.beginPath();
+                ctx.arc(rx, ry, rRad, 0, Math.PI * 2);
+                ctx.stroke();
+
+                if (i > 0) {
+                    let prevRing = rings[i - 1];
+                    let pScale = 300 / (prevRing.z + 1);
+                    let prx = centerX + (ship.x - centerX) * (prevRing.z * 0.001);
+                    let pry = centerY + (ship.y - centerY) * (prevRing.z * 0.001);
+                    let prRad = prevRing.radius * pScale;
+
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(0, 255, 204, 0.15)';
+                    ctx.beginPath();
+                    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                        ctx.moveTo(rx + Math.cos(a) * rRad, ry + Math.sin(a) * rRad);
+                        ctx.lineTo(prx + Math.cos(a) * prRad, pry + Math.sin(a) * prRad);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            // 2. Render Spaced Gate Markers
+            for (let i = 0; i < markers.length; i++) {
+                let m = markers[i];
+                m.z -= speed;
+
+                if (m.z <= 0) {
+                    m.z = 4000;
+                    m.angle = Math.random() * Math.PI * 2;
+                    m.passed = false;
+                }
+
+                let scale = 300 / (m.z + 1);
+                let gateX = centerX + Math.cos(m.angle) * 150 * scale;
+                let gateY = centerY + Math.sin(m.angle) * 150 * scale;
+                let gateSize = 40 * scale;
+
+                ctx.fillStyle = '#ff0055';
+                ctx.beginPath();
+                ctx.arc(gateX, gateY, gateSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (m.z < 20 && !m.passed) {
+                    m.passed = true;
+                    let distToShip = Math.hypot(ship.x - gateX, ship.y - gateY);
+                    if (distToShip < gateSize + 20) {
+                        score += 100;
+                    }
+                }
+            }
+
+            // 3. Wall Collision Penalty Check
+            let distFromCenter = Math.hypot(ship.x - centerX, ship.y - centerY);
+            if (distFromCenter > 220) {
+                score = Math.max(0, score - 1);
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 4. Render Sleek Vector Ship
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(ship.bank);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -20);
+            ctx.lineTo(15, 15);
+            ctx.lineTo(0, 8);
+            ctx.lineTo(-15, 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ff0055';
+            ctx.fillRect(-5, 8, 10, 8);
+
+            ctx.restore();
+
+            // 5. HUD Scoreboard
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px monospace';
+            ctx.fillText(`SCORE: ${score}`, 30, 40);
+            ctx.fillText(`SPEED: ${speed.toFixed(1)}`, 30, 70);
+
+            speed += 0.001;
+
+            requestAnimationFrame(updateArcadeGame);
+        }
+
+        function closeArcadeGame() {
+            gameRunning = false;
+            document.getElementById('arcade-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Log</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --rec: #ff7b72;
+            --green: #238636;
             --engineer: #3fb950;
             --muse: #db61a2;
         }
