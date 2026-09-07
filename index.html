@@ -191,15 +191,13 @@
     </div>
 
     <script>
-        // --- SUPABASE CLIENT SETUP ---
-        // (Ensure these match your Supabase project credentials if needed)
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- DIRECT SUPABASE CLIENT INITIALIZATION ---
+        const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Replace with your actual Supabase URL if needed
+        const SUPABASE_ANON_KEY = 'your-anon-key'; // Replace with your actual Supabase Anon Key if needed
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function loadSubmissions() {
             try {
-                // Fetch submissions and challenge deadlines
                 const { data: subs, error } = await supabase
                     .from('submissions')
                     .select('*, challenges(deadline)')
@@ -217,7 +215,6 @@
                     const item = document.createElement('div');
                     item.className = 'submission-item';
                     
-                    // Compare created_at with challenge deadline for late tag
                     let isLate = false;
                     if (sub.challenges && sub.challenges.deadline) {
                         isLate = new Date(sub.created_at) > new Date(sub.challenges.deadline);
