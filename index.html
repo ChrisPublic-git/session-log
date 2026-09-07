@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Session Log</title>
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #0d1117;
@@ -189,28 +191,43 @@
     </div>
 
     <script>
-        // --- FETCH SUBMISSIONS ON LOAD ---
+        // --- SUPABASE CLIENT SETUP ---
+        // (Ensure these match your Supabase project credentials if needed)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         async function loadSubmissions() {
             try {
-                const response = await fetch('/api/submissions');
-                const data = await response.json();
+                // Fetch submissions and challenge deadlines
+                const { data: subs, error } = await supabase
+                    .from('submissions')
+                    .select('*, challenges(deadline)')
+                    .order('created_at', { ascending: false });
+
                 const listEl = document.getElementById('submissions-list');
                 
-                if (!data || data.length === 0) {
+                if (error || !subs || subs.length === 0) {
                     listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">No submissions found yet.</div>';
                     return;
                 }
 
                 listEl.innerHTML = '';
-                data.forEach(sub => {
+                subs.forEach(sub => {
                     const item = document.createElement('div');
                     item.className = 'submission-item';
                     
-                    let lateHtml = sub.is_late ? '<span class="late-tag">LATE</span>' : '';
+                    // Compare created_at with challenge deadline for late tag
+                    let isLate = false;
+                    if (sub.challenges && sub.challenges.deadline) {
+                        isLate = new Date(sub.created_at) > new Date(sub.challenges.deadline);
+                    }
+                    
+                    let lateHtml = isLate ? '<span class="late-tag">LATE</span>' : '';
                     
                     item.innerHTML = `
                         <div>
-                            <strong>${sub.title || 'Untitled'}</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by ${sub.artist || 'Unknown'}</span>
+                            <strong>${sub.title || 'Untitled'}</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by ${sub.artist || 'Chris'}</span>
                         </div>
                         <div>
                             <span style="font-size: 0.85rem; color: var(--text-muted);">${sub.created_at}</span>
@@ -231,18 +248,13 @@
         let pressTimer;
 
         trigger.addEventListener('mousedown', () => {
-            pressTimer = setTimeout(() => {
-                startArcadeGame();
-            }, 2500);
+            pressTimer = setTimeout(() => { startArcadeGame(); }, 2500);
         });
-
         trigger.addEventListener('mouseup', () => clearTimeout(pressTimer));
         trigger.addEventListener('mouseleave', () => clearTimeout(pressTimer));
         
         trigger.addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => {
-                startArcadeGame();
-            }, 2500);
+            pressTimer = setTimeout(() => { startArcadeGame(); }, 2500);
         });
         trigger.addEventListener('touchend', () => clearTimeout(pressTimer));
 
@@ -256,7 +268,6 @@
         let rings = [];
         let markers = [];
         let speed = 4;
-        let distanceTraveled = 0;
 
         function resizeArcadeCanvas() {
             canvas.width = window.innerWidth;
@@ -268,7 +279,6 @@
             resizeArcadeCanvas();
             gameRunning = true;
             score = 0;
-            distanceTraveled = 0;
             speed = 5;
             rings = [];
             markers = [];
@@ -316,7 +326,6 @@
 
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            distanceTraveled += speed;
 
             ctx.strokeStyle = '#00ffcc';
             ctx.lineWidth = 2;
