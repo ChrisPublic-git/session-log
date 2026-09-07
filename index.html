@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Session Log</title>
-    <!-- Supabase JS Client CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #0d1117;
@@ -16,6 +14,8 @@
             --accent: #58a6ff;
             --rec: #ff7b72;
             --green: #238636;
+            --engineer: #3fb950;
+            --muse: #db61a2;
         }
 
         body {
@@ -121,6 +121,43 @@
             margin-left: 8px;
         }
 
+        /* Assistant Grid for Engineer & Muse */
+        .assistant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .assistant-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .assistant-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .engineer-title { color: var(--engineer); }
+        .muse-title { color: var(--muse); }
+
+        .assistant-body {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            min-height: 40px;
+        }
+
+        /* Arcade Modal */
         #arcade-modal {
             display: none;
             position: fixed;
@@ -177,6 +214,24 @@
             </div>
         </div>
 
+        <!-- Engineer & Muse Panels -->
+        <div class="assistant-grid">
+            <div class="assistant-card">
+                <div>
+                    <div class="assistant-header engineer-title">⚙️ The Engineer</div>
+                    <div class="assistant-body" id="engineer-text">Monitoring mix dynamics, headroom, and crest factor metrics. Ready for technical diagnostics.</div>
+                </div>
+                <button onclick="triggerEngineer()">Request Mix Note</button>
+            </div>
+            <div class="assistant-card">
+                <div>
+                    <div class="assistant-header muse-title">✨ The Muse</div>
+                    <div class="assistant-body" id="muse-text">Standing by to shatter writer's block with constraints, dares, and spark prompts.</div>
+                </div>
+                <button onclick="triggerMuse()">Summon Spark</button>
+            </div>
+        </div>
+
         <div class="card">
             <h3>Recent Submissions</h3>
             <div id="submissions-list">
@@ -185,33 +240,52 @@
         </div>
     </div>
 
+    <!-- Arcade Easter Egg Modal -->
     <div id="arcade-modal">
         <button class="arcade-close" onclick="closeArcadeGame()">Quit Game</button>
         <canvas id="arcade-canvas"></canvas>
     </div>
 
     <script>
-        // --- DIRECT SUPABASE CLIENT INITIALIZATION ---
-        const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Replace with your actual Supabase URL if needed
-        const SUPABASE_ANON_KEY = 'your-anon-key'; // Replace with your actual Supabase Anon Key if needed
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- ENGINEER & MUSE INTERACTION LOGIC ---
+        const engineerNotes = [
+            "Crest factor is looking tight. Watch out for over-compression on the low-mid transients.",
+            "Headroom is healthy at -3dbfs, but your master bus limiter is working harder than it needs to.",
+            "Phase correlation check: low frequencies are centered nicely, but check your stereo width on the overheads.",
+            "Dynamics note: Your vocal track is dipping into the noise floor during quiet passages. Automate your gains."
+        ];
 
+        const museSparks = [
+            "Dare: Write the entire bridge using only major chords played backwards in your head.",
+            "Constraint: Your next lyric must feature an object within arm's reach that has no business in a song.",
+            "Prompt: Write from the perspective of an analog tape machine realizing it's about to be recorded over.",
+            "Dare: No drums allowed. The rhythm must be entirely implied by rhythmic vocal phrasing and acoustic string slaps."
+        ];
+
+        function triggerEngineer() {
+            const randomNote = engineerNotes[Math.floor(Math.random() * engineerNotes.length)];
+            document.getElementById('engineer-text').innerText = randomNote;
+        }
+
+        function triggerMuse() {
+            const randomSpark = museSparks[Math.floor(Math.random() * museSparks.length)];
+            document.getElementById('muse-text').innerText = randomSpark;
+        }
+
+        // --- FETCH SUBMISSIONS ON LOAD ---
         async function loadSubmissions() {
             try {
-                const { data: subs, error } = await supabase
-                    .from('submissions')
-                    .select('*, challenges(deadline)')
-                    .order('created_at', { ascending: false });
-
+                const response = await fetch('/api/submissions');
+                const data = await response.json();
                 const listEl = document.getElementById('submissions-list');
                 
-                if (error || !subs || subs.length === 0) {
+                if (!data || data.length === 0) {
                     listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">No submissions found yet.</div>';
                     return;
                 }
 
                 listEl.innerHTML = '';
-                subs.forEach(sub => {
+                data.forEach(sub => {
                     const item = document.createElement('div');
                     item.className = 'submission-item';
                     
