@@ -7,12 +7,6 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    
-    // API GET endpoint for submissions feed
-    if (request.method === 'GET' && url.pathname === '/api/submissions') {
-      return getSubmissions(request, env);
-    }
-
     if (request.method === 'POST') {
       if (url.pathname === '/api/chairman')         { const b = await readJson(request); return chatHelper(env, 'chairman', b); }
       if (url.pathname === '/api/helper')           { const b = await readJson(request); return chatHelper(env, (b && b.who) || 'chairman', b); }
@@ -30,17 +24,6 @@ export default {
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 async function readJson(request) { try { return await request.json(); } catch (e) { return null; } }
-
-// Fetch submissions from Supabase for the frontend feed
-async function getSubmissions(request, env) {
-  try {
-    if (!haveDb(env)) throw new Error('Database not configured');
-    const subs = await sbGet(env, 'submissions?select=*,challenges(deadline)&order=created_at.desc');
-    return json(subs);
-  } catch (err) {
-    return json({ error: err.message }, 500);
-  }
-}
 
 // Free transcription helper using Cloudflare Workers AI Whisper
 async function fetchAndTranscribe(env, audioPath) {
