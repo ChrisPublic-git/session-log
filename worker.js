@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
 // Session Log — Cloudflare Worker
-// Serves static assets, Supabase submissions, and Workers AI endpoints for
-// The Chairman, The Engineer, and The Muse.
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -29,13 +24,16 @@ export default {
 
 async function getSubmissions(request, env) {
   try {
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-    const { data: subs, error } = await supabase
-      .from('submissions')
-      .select('*, challenges(deadline)')
-      .order('created_at', { ascending: false });
+    // Direct REST API fetch to Supabase (bypasses npm package build issues)
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/submissions?select=*,challenges(deadline)&order=created_at.desc`, {
+      headers: {
+        'apikey': env.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`
+      }
+    });
 
-    if (error) throw error;
+    if (!res.ok) throw new Error('Failed to fetch from Supabase');
+    const subs = await res.json();
 
     return new Response(JSON.stringify(subs), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
