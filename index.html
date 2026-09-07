@@ -178,15 +178,7 @@
         <div class="card">
             <h3>Recent Submissions</h3>
             <div id="submissions-list">
-                <div class="submission-item">
-                    <div>
-                        <strong>Falling's Never Easy</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by Chris</span>
-                    </div>
-                    <div>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">2026-09-06 23:55:00</span>
-                        <span class="late-tag">LATE</span>
-                    </div>
-                </div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Loading submissions...</div>
             </div>
         </div>
     </div>
@@ -197,6 +189,44 @@
     </div>
 
     <script>
+        // --- FETCH SUBMISSIONS ON LOAD ---
+        async function loadSubmissions() {
+            try {
+                const response = await fetch('/api/submissions');
+                const data = await response.json();
+                const listEl = document.getElementById('submissions-list');
+                
+                if (!data || data.length === 0) {
+                    listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">No submissions found yet.</div>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                data.forEach(sub => {
+                    const item = document.createElement('div');
+                    item.className = 'submission-item';
+                    
+                    let lateHtml = sub.is_late ? '<span class="late-tag">LATE</span>' : '';
+                    
+                    item.innerHTML = `
+                        <div>
+                            <strong>${sub.title || 'Untitled'}</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by ${sub.artist || 'Unknown'}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">${sub.created_at}</span>
+                            ${lateHtml}
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            } catch (err) {
+                console.error('Failed to load submissions', err);
+            }
+        }
+
+        loadSubmissions();
+
+        // --- EASTER EGG TRIGGER LOGIC ---
         const trigger = document.getElementById('easter-egg-trigger');
         let pressTimer;
 
@@ -216,6 +246,7 @@
         });
         trigger.addEventListener('touchend', () => clearTimeout(pressTimer));
 
+        // --- ARCADE GAME LOGIC ---
         const canvas = document.getElementById('arcade-canvas');
         const ctx = canvas.getContext('2d');
 
@@ -248,18 +279,11 @@
             ship.targetY = ship.y;
 
             for (let i = 0; i < 60; i++) {
-                rings.push({
-                    z: i * 40,
-                    radius: 350
-                });
+                rings.push({ z: i * 40, radius: 350 });
             }
 
             for (let i = 1; i <= 10; i++) {
-                markers.push({
-                    z: i * 400,
-                    angle: Math.random() * Math.PI * 2,
-                    passed: false
-                });
+                markers.push({ z: i * 400, angle: Math.random() * Math.PI * 2, passed: false });
             }
 
             document.getElementById('arcade-modal').style.display = 'flex';
@@ -292,7 +316,6 @@
 
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-
             distanceTraveled += speed;
 
             ctx.strokeStyle = '#00ffcc';
@@ -301,10 +324,7 @@
             for (let i = 0; i < rings.length; i++) {
                 let ring = rings[i];
                 ring.z -= speed;
-
-                if (ring.z <= 0) {
-                    ring.z = rings.length * 40;
-                }
+                if (ring.z <= 0) ring.z = rings.length * 40;
 
                 let scale = 300 / (ring.z + 1);
                 let rx = centerX + (ship.x - centerX) * (ring.z * 0.001);
@@ -337,7 +357,6 @@
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
                 m.z -= speed;
-
                 if (m.z <= 0) {
                     m.z = 4000;
                     m.angle = Math.random() * Math.PI * 2;
@@ -356,15 +375,13 @@
 
                 if (m.z < 20 && !m.passed) {
                     m.passed = true;
-                    let distToShip = Math.hypot(ship.x - gateX, ship.y - gateY);
-                    if (distToShip < gateSize + 20) {
+                    if (Math.hypot(ship.x - gateX, ship.y - gateY) < gateSize + 20) {
                         score += 100;
                     }
                 }
             }
 
-            let distFromCenter = Math.hypot(ship.x - centerX, ship.y - centerY);
-            if (distFromCenter > 220) {
+            if (Math.hypot(ship.x - centerX, ship.y - centerY) > 220) {
                 score = Math.max(0, score - 1);
                 ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -373,7 +390,6 @@
             ctx.save();
             ctx.translate(ship.x, ship.y);
             ctx.rotate(ship.bank);
-            
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#00ffcc';
             ctx.lineWidth = 2;
@@ -388,7 +404,6 @@
             
             ctx.fillStyle = '#ff0055';
             ctx.fillRect(-5, 8, 10, 8);
-
             ctx.restore();
 
             ctx.fillStyle = '#ffffff';
@@ -397,7 +412,6 @@
             ctx.fillText(`SPEED: ${speed.toFixed(1)}`, 30, 70);
 
             speed += 0.001;
-
             requestAnimationFrame(updateArcadeGame);
         }
 
