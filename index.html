@@ -69,7 +69,6 @@
             margin-bottom: 20px;
         }
 
-        /* Audio Player & Mini Visualizer */
         .player-bar {
             display: flex;
             align-items: center;
@@ -97,7 +96,6 @@
             transition: height 0.1s;
         }
 
-        /* Submissions List */
         .submission-item {
             padding: 12px 0;
             border-bottom: 1px solid var(--border);
@@ -121,7 +119,6 @@
             margin-left: 8px;
         }
 
-        /* Fullscreen Arcade Easter Egg Modal */
         #arcade-modal {
             display: none;
             position: fixed;
@@ -168,9 +165,7 @@
             <button id="new-challenge-btn">+ New Challenge</button>
         </header>
 
-        <!-- Player Bar with Easter Egg Trigger -->
         <div class="player-bar">
-            <!-- Long press (2.5s) on this mini-visualizer launches Tunnel Rider -->
             <div class="mini-visualizer" id="easter-egg-trigger" title="Hold to launch arcade">
                 <span></span><span></span><span></span><span></span>
             </div>
@@ -180,11 +175,9 @@
             </div>
         </div>
 
-        <!-- Submissions Card -->
         <div class="card">
             <h3>Recent Submissions</h3>
             <div id="submissions-list">
-                <!-- Sample dynamic list item demonstrating the LATE tag implementation -->
                 <div class="submission-item">
                     <div>
                         <strong>Falling's Never Easy</strong> <span style="color: var(--text-muted); font-size: 0.85rem;">by Chris</span>
@@ -198,27 +191,24 @@
         </div>
     </div>
 
-    <!-- Fullscreen Arcade Modal -->
     <div id="arcade-modal">
         <button class="arcade-close" onclick="closeArcadeGame()">Quit Game</button>
         <canvas id="arcade-canvas"></canvas>
     </div>
 
     <script>
-        // --- EASTER EGG TRIGGER LOGIC ---
         const trigger = document.getElementById('easter-egg-trigger');
         let pressTimer;
 
         trigger.addEventListener('mousedown', () => {
             pressTimer = setTimeout(() => {
                 startArcadeGame();
-            }, 2500); // 2.5 second long press
+            }, 2500);
         });
 
         trigger.addEventListener('mouseup', () => clearTimeout(pressTimer));
         trigger.addEventListener('mouseleave', () => clearTimeout(pressTimer));
         
-        // Touch events for mobile support
         trigger.addEventListener('touchstart', () => {
             pressTimer = setTimeout(() => {
                 startArcadeGame();
@@ -226,7 +216,6 @@
         });
         trigger.addEventListener('touchend', () => clearTimeout(pressTimer));
 
-        // --- UPGRADED TUNNEL RIDER ARCADE GAME ---
         const canvas = document.getElementById('arcade-canvas');
         const ctx = canvas.getContext('2d');
 
@@ -258,7 +247,6 @@
             ship.targetX = ship.x;
             ship.targetY = ship.y;
 
-            // Initialize continuous wormhole rings
             for (let i = 0; i < 60; i++) {
                 rings.push({
                     z: i * 40,
@@ -266,7 +254,6 @@
                 });
             }
 
-            // Initialize spaced-out gate markers
             for (let i = 1; i <= 10; i++) {
                 markers.push({
                     z: i * 400,
@@ -308,7 +295,6 @@
 
             distanceTraveled += speed;
 
-            // 1. Render Connected Wormhole Tunnel Mesh
             ctx.strokeStyle = '#00ffcc';
             ctx.lineWidth = 2;
             
@@ -348,7 +334,6 @@
                 }
             }
 
-            // 2. Render Spaced Gate Markers
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
                 m.z -= speed;
@@ -378,7 +363,6 @@
                 }
             }
 
-            // 3. Wall Collision Penalty Check
             let distFromCenter = Math.hypot(ship.x - centerX, ship.y - centerY);
             if (distFromCenter > 220) {
                 score = Math.max(0, score - 1);
@@ -386,7 +370,6 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // 4. Render Sleek Vector Ship
             ctx.save();
             ctx.translate(ship.x, ship.y);
             ctx.rotate(ship.bank);
@@ -408,7 +391,6 @@
 
             ctx.restore();
 
-            // 5. HUD Scoreboard
             ctx.fillStyle = '#ffffff';
             ctx.font = '20px monospace';
             ctx.fillText(`SCORE: ${score}`, 30, 40);
