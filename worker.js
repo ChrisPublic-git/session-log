@@ -7,6 +7,18 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // 1. ADDED BACK: Database endpoint for frontend submissions feed
+    if (request.method === 'GET' && url.pathname === '/api/submissions') {
+      try {
+        if (!haveDb(env)) throw new Error('Database not configured');
+        const subs = await sbGet(env, 'submissions?select=*,challenges(deadline)&order=created_at.desc');
+        return json(subs);
+      } catch (err) {
+        return json({ error: err.message }, 500);
+      }
+    }
+
     if (request.method === 'POST') {
       if (url.pathname === '/api/chairman')         { const b = await readJson(request); return chatHelper(env, 'chairman', b); }
       if (url.pathname === '/api/helper')           { const b = await readJson(request); return chatHelper(env, (b && b.who) || 'chairman', b); }
