@@ -2504,21 +2504,26 @@ function renderChallengeList(challenges){
   banner.onclick = () => openChallenge(current);
 
   heading.textContent = 'Past reels';
-  if(past.length === 0){
-    el.innerHTML = '';
-    return;
-  }
-  el.innerHTML = past.map(c => `
+  const pastHtml = past.map(c => `
     <div class="reel" data-id="${c.id}">
       <div class="num">Week ${c.week_number}</div>
       <h3>${escapeHtml(c.title)}</h3>
       <p class="params">${escapeHtml(c.parameters)}</p>
     </div>
   `).join('');
+  const archiveHtml = archiveChallenge ? `
+    <div class="reel reel-archive" data-id="${archiveChallenge.id}">
+      <div class="num">Archive</div>
+      <h3>${escapeHtml(archiveChallenge.title || 'Archive')}</h3>
+      <p class="params">${escapeHtml(archiveChallenge.parameters || 'Pre-app archive — standout tracks not tied to a weekly challenge.')}</p>
+    </div>
+  ` : '';
+  el.innerHTML = pastHtml + archiveHtml;
   el.querySelectorAll('.reel').forEach(node => {
     node.addEventListener('click', () => {
-      const c = past.find(x => x.id === node.dataset.id);
-      openChallenge(c);
+      let c = past.find(x => x.id === node.dataset.id);
+      if(!c && archiveChallenge && node.dataset.id === archiveChallenge.id) c = archiveChallenge;
+      if(c) openChallenge(c);
     });
   });
 }
@@ -2577,7 +2582,7 @@ async function openChallenge(challenge){
   $('list-view').style.display = 'none';
   $('detail-view').style.display = 'block';
   showChallengeView();
-  $('detail-num').textContent = 'Week ' + challenge.week_number;
+  $('detail-num').textContent = (challenge.week_number === 0) ? 'Archive' : ('Week ' + challenge.week_number);
   $('detail-title').textContent = challenge.title;
   $('detail-params').textContent = challenge.parameters;
   renderNav();
@@ -2586,6 +2591,14 @@ async function openChallenge(challenge){
 }
 
 function renderNav(){
+  if(currentChallenge && currentChallenge.week_number === 0){
+    navLabelEl.textContent = 'Archive';
+    navPrevBtn.disabled = true;
+    navNextBtn.disabled = true;
+    navPrevBtn.textContent = '◀ PREV';
+    navNextBtn.textContent = 'NEXT ▶';
+    return;
+  }
   if(allChallenges.length === 0) return;
   const isCurrent = challengeIndex === 0;
   navLabelEl.textContent = 'Week ' + allChallenges[challengeIndex].week_number + (isCurrent ? ' / Current' : ' / Past');
